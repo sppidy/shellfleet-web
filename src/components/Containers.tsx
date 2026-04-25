@@ -180,11 +180,15 @@ export default function Containers({ agentId }: { agentId: string }) {
                 container={c}
                 pending={containerAction?.id === c.id ? containerAction.action : null}
                 disabled={containerAction !== null && containerAction.id !== c.id}
-                onAction={(action) => {
+                onAction={async (action) => {
                   if (action === 'remove') {
-                    if (!confirm(`Remove container ${c.names || c.id.slice(0, 12)}? Running ones will be force-killed.`)) {
-                      return;
-                    }
+                    const ok = await confirm({
+                      title: `Remove container ${c.names || c.id.slice(0, 12)}?`,
+                      description: 'Running containers will be force-killed.',
+                      confirmLabel: 'Remove',
+                      destructive: true,
+                    });
+                    if (!ok) return;
                   }
                   setContainerAction({ id: c.id, action });
                   setContainerActionLog(null);
