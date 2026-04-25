@@ -44,15 +44,18 @@ export default function ContainerStats({ agentId }: { agentId: string }) {
     sendToAgent(agentId, { type: 'DockerStatsRequest' });
   }, [agentId, sendToAgent]);
 
-  // Subscribe to responses + drive polling. Polling pauses when the
-  // browser tab is hidden so an idle dashboard doesn't keep
-  // hammering docker stats.
+  // Reset state when the operator switches agents.
   useEffect(() => {
     setSnapshots(null);
     setError(null);
     setPaused(false);
     historyRef.current = {};
+  }, [agentId]);
 
+  // Subscribe to responses + drive polling. Polling pauses when the
+  // browser tab is hidden so an idle dashboard doesn't keep
+  // hammering docker stats.
+  useEffect(() => {
     const unsub = onAgentMessage(agentId, (msg) => {
       if (msg.type !== 'DockerStatsResponse') return;
       setLastFetchAt(Date.now());
