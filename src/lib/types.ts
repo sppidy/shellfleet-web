@@ -211,6 +211,29 @@ export type SwarmStackDeployResponse = {
   error: string | null;
 };
 
+export type FanOutKind = 'apt-status' | 'apt-upgrade' | 'docker-list';
+
+export type FanOutRun = {
+  id: number;
+  kind: string;
+  payload: string | null;
+  started_at: number;
+  actor: string | null;
+};
+
+export type FanOutResult = {
+  run_id: number;
+  agent_id: string;
+  status: 'pending' | 'success' | 'failed' | 'offline' | string;
+  detail: string | null;
+  finished_at: number | null;
+};
+
+export type FanOutRunDetail = {
+  run: FanOutRun;
+  results: FanOutResult[];
+};
+
 export type HealthProbeKind = 'http' | 'tcp';
 export type HealthProbeState = 'green' | 'red';
 

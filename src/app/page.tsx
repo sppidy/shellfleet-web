@@ -183,6 +183,14 @@ function HomeBody() {
             <ActivityIcon className="w-3.5 h-3.5" />
             Activity
           </button>
+          <button
+            type="button"
+            onClick={() => router.push('/fan-out')}
+            className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 px-3 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
+          >
+            <RocketIcon className="w-3.5 h-3.5" />
+            Fan-out
+          </button>
         </div>
 
         <div className="px-4 py-3 border-b border-slate-800 text-xs uppercase tracking-wide text-slate-500 flex items-center justify-between">
