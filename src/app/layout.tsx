@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { FleetSnapshotsProvider } from "@/components/providers/FleetSnapshotsProvider";
+import { UiProvider } from "@/components/providers/UiProvider";
 
 export default function RootLayout({
   children,
@@ -32,11 +33,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
-        <SessionProvider>
-          <WebSocketProvider>
-            <FleetSnapshotsProvider>{children}</FleetSnapshotsProvider>
-          </WebSocketProvider>
-        </SessionProvider>
+        <UiProvider>
+          <SessionProvider>
+            <WebSocketProvider>
+              <FleetSnapshotsProvider>{children}</FleetSnapshotsProvider>
+            </WebSocketProvider>
+          </SessionProvider>
+        </UiProvider>
       </body>
     </html>
   );

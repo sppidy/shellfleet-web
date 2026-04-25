@@ -11,7 +11,9 @@ import {
   Loader2Icon,
   SearchIcon,
   XIcon,
+  ScrollTextIcon,
 } from 'lucide-react';
+import JournalLogViewer from './JournalLogViewer';
 
 type Action = 'start' | 'stop' | 'restart';
 type Toast = { kind: 'success' | 'error'; text: string };
@@ -27,6 +29,7 @@ export default function ServiceList({ agentId }: { agentId: string }) {
   const [stateFilter, setStateFilter] = useState<'all' | 'active' | 'failed' | 'inactive'>('all');
   const [pending, setPending] = useState<Record<string, Action>>({});
   const [toast, setToast] = useState<Toast | null>(null);
+  const [logUnit, setLogUnit] = useState<string | null>(null);
 
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -206,6 +209,7 @@ export default function ServiceList({ agentId }: { agentId: string }) {
               service={service}
               pending={pending[service.name]}
               onControl={handleControl}
+              onShowLogs={() => setLogUnit(service.name)}
             />
           ))}
         </ul>
@@ -222,6 +226,14 @@ export default function ServiceList({ agentId }: { agentId: string }) {
           {toast.text}
         </div>
       )}
+
+      {logUnit && (
+        <JournalLogViewer
+          agentId={agentId}
+          unit={logUnit}
+          onClose={() => setLogUnit(null)}
+        />
+      )}
     </div>
   );
 }
@@ -230,10 +242,12 @@ function ServiceRow({
   service,
   pending,
   onControl,
+  onShowLogs,
 }: {
   service: ServiceInfo;
   pending?: Action;
   onControl: (name: string, action: Action) => void;
+  onShowLogs: () => void;
 }) {
   const stateClasses =
     service.active_state === 'active'
@@ -266,6 +280,15 @@ function ServiceRow({
       </div>
 
       <div className="flex space-x-0.5 shrink-0">
+        <button
+          type="button"
+          title="journalctl -fu"
+          onClick={onShowLogs}
+          disabled={!!pending}
+          className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded transition-colors"
+        >
+          <ScrollTextIcon className="w-3.5 h-3.5" />
+        </button>
         <ActionButton
           label="Start"
           icon={<PlayIcon className="w-3.5 h-3.5" />}

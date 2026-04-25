@@ -10,9 +10,10 @@ import {
   Loader2Icon,
   NetworkIcon,
   RocketIcon,
+  Layers3Icon,
 } from 'lucide-react';
 
-type Mode = 'container' | 'service';
+type Mode = 'container' | 'service' | 'stack';
 type Outcome =
   | { kind: 'success'; id: string | null; log: string }
   | { kind: 'error'; log: string; error: string | null }
@@ -24,12 +25,18 @@ const linesFrom = (s: string) =>
     .map((l) => l.trim())
     .filter(Boolean);
 
+const inputClass =
+  'w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
+
+const textareaClass =
+  'w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
+
 export default function Deploy({ agentId }: { agentId: string }) {
   const { sendToAgent, onAgentMessage } = useWebSocket();
   const [mode, setMode] = useState<Mode>('container');
   const [swarmRole, setSwarmRole] = useState<SwarmRole | null>(null);
 
-  // Shared fields
+  // Shared
   const [image, setImage] = useState('');
   const [name, setName] = useState('');
   const [ports, setPorts] = useState('');
@@ -50,11 +57,17 @@ export default function Deploy({ agentId }: { agentId: string }) {
   const [networks, setNetworks] = useState('');
   const [restartCondition, setRestartCondition] = useState<'any' | 'on-failure' | 'none'>('any');
 
+  // Stack-only
+  const [stackName, setStackName] = useState('');
+  const [composeYaml, setComposeYaml] = useState(
+    'version: "3.9"\n\nservices:\n  web:\n    image: nginx:1.27-alpine\n    ports:\n      - "8080:80"\n',
+  );
+  const [stackPrune, setStackPrune] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const submittingRef = useRef(false);
 
-  // Discover swarm role so we can light up the service tab.
   useEffect(() => {
     setOutcome(null);
     setSubmitting(false);
@@ -69,48 +82,42 @@ export default function Deploy({ agentId }: { agentId: string }) {
         submittingRef.current = false;
         setSubmitting(false);
         if (msg.payload.success) {
-          setOutcome({
-            kind: 'success',
-            id: msg.payload.container_id,
-            log: msg.payload.log,
-          });
+          setOutcome({ kind: 'success', id: msg.payload.container_id, log: msg.payload.log });
         } else {
-          setOutcome({
-            kind: 'error',
-            log: msg.payload.log,
-            error: msg.payload.error,
-          });
+          setOutcome({ kind: 'error', log: msg.payload.log, error: msg.payload.error });
         }
       } else if (msg.type === 'SwarmCreateServiceResponse') {
         if (!submittingRef.current) return;
         submittingRef.current = false;
         setSubmitting(false);
         if (msg.payload.success) {
-          setOutcome({
-            kind: 'success',
-            id: msg.payload.service_id,
-            log: msg.payload.log,
-          });
+          setOutcome({ kind: 'success', id: msg.payload.service_id, log: msg.payload.log });
         } else {
-          setOutcome({
-            kind: 'error',
-            log: msg.payload.log,
-            error: msg.payload.error,
-          });
+          setOutcome({ kind: 'error', log: msg.payload.log, error: msg.payload.error });
+        }
+      } else if (msg.type === 'SwarmStackDeployResponse') {
+        if (!submittingRef.current) return;
+        submittingRef.current = false;
+        setSubmitting(false);
+        if (msg.payload.success) {
+          setOutcome({ kind: 'success', id: msg.payload.stack_name, log: msg.payload.log });
+        } else {
+          setOutcome({ kind: 'error', log: msg.payload.log, error: msg.payload.error });
         }
       }
     });
+
     sendToAgent(agentId, { type: 'DockerListRequest' });
     return unsub;
   }, [agentId, sendToAgent, onAgentMessage]);
 
-  // If user switches agents, fall back to container mode if the new host
-  // isn't a swarm manager.
   useEffect(() => {
-    if (mode === 'service' && swarmRole !== null && swarmRole !== 'manager') {
+    if ((mode === 'service' || mode === 'stack') && swarmRole !== null && swarmRole !== 'manager') {
       setMode('container');
     }
   }, [swarmRole, mode]);
+
+  const canSubmitService = swarmRole === 'manager';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +125,18 @@ export default function Deploy({ agentId }: { agentId: string }) {
     setOutcome(null);
     submittingRef.current = true;
     setSubmitting(true);
+
+    if (mode === 'stack') {
+      sendToAgent(agentId, {
+        type: 'SwarmStackDeployRequest',
+        payload: {
+          stack_name: stackName.trim(),
+          compose_yaml: composeYaml,
+          prune: stackPrune,
+        },
+      });
+      return;
+    }
 
     if (mode === 'container') {
       const spec: ContainerSpec = {
@@ -151,8 +170,6 @@ export default function Deploy({ agentId }: { agentId: string }) {
     }
   };
 
-  const canSubmitService = swarmRole === 'manager';
-
   return (
     <div className="max-w-3xl mx-auto w-full">
       <div className="flex items-center gap-2 mb-1">
@@ -160,9 +177,8 @@ export default function Deploy({ agentId }: { agentId: string }) {
         <h2 className="text-base font-semibold">Deploy a service</h2>
       </div>
       <p className="text-sm text-slate-500 mb-4">
-        Create a standalone Docker container, or — on a swarm manager — a
-        replicated swarm service. The agent shells out to the docker CLI and
-        echoes the full output back.
+        Create a container, a swarm service, or a full compose stack. The
+        agent shells out to the docker CLI and echoes the full output back.
       </p>
 
       <div className="inline-flex bg-slate-900 border border-slate-800 rounded-md p-0.5 text-xs mb-4">
@@ -179,210 +195,280 @@ export default function Deploy({ agentId }: { agentId: string }) {
           icon={<NetworkIcon className="w-3.5 h-3.5" />}
           label={canSubmitService ? 'Swarm service' : 'Swarm service (manager only)'}
         />
+        <ModeButton
+          active={mode === 'stack'}
+          disabled={!canSubmitService}
+          onClick={() => setMode('stack')}
+          icon={<Layers3Icon className="w-3.5 h-3.5" />}
+          label={canSubmitService ? 'Stack (compose)' : 'Stack (manager only)'}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="Image" required>
-            <input
-              type="text"
-              required
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="nginx:1.27-alpine"
-              spellCheck={false}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={mode === 'service' ? 'Service name' : 'Container name (optional)'} required={mode === 'service'}>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required={mode === 'service'}
-              placeholder={mode === 'service' ? 'my-app' : '(auto-generated)'}
-              spellCheck={false}
-              className={inputClass}
-            />
-          </Field>
-        </div>
-
-        <Field label="Ports" hint="One per line. host:container[/proto]">
-          <textarea
-            rows={2}
-            value={ports}
-            onChange={(e) => setPorts(e.target.value)}
-            placeholder={'80:80\n8080:8080/tcp'}
-            className={textareaClass}
-          />
-        </Field>
-
-        <Field label="Environment" hint="One KEY=value per line">
-          <textarea
-            rows={2}
-            value={env}
-            onChange={(e) => setEnv(e.target.value)}
-            placeholder={'TZ=UTC\nLOG_LEVEL=info'}
-            className={textareaClass}
-          />
-        </Field>
-
-        {mode === 'container' ? (
+        {mode === 'stack' ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Volumes" hint="One per line. host:container[:ro]">
-                <textarea
-                  rows={2}
-                  value={volumes}
-                  onChange={(e) => setVolumes(e.target.value)}
-                  placeholder="/var/log:/logs:ro"
-                  className={textareaClass}
-                />
-              </Field>
-              <Field label="Network">
-                <input
-                  type="text"
-                  value={network}
-                  onChange={(e) => setNetwork(e.target.value)}
-                  placeholder="bridge"
-                  className={inputClass}
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Restart policy">
-                <select
-                  value={restartPolicy}
-                  onChange={(e) => setRestartPolicy(e.target.value as typeof restartPolicy)}
-                  className={inputClass}
-                >
-                  <option value="no">no</option>
-                  <option value="always">always</option>
-                  <option value="unless-stopped">unless-stopped</option>
-                  <option value="on-failure">on-failure</option>
-                </select>
-              </Field>
-              <label className="flex items-center gap-2 self-end pb-1.5 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={pull}
-                  onChange={(e) => setPull(e.target.checked)}
-                  className="accent-blue-500"
-                />
-                <code className="text-xs">--pull always</code>
-              </label>
+            <Field label="Stack name" required>
+              <input
+                type="text"
+                required
+                value={stackName}
+                onChange={(e) => setStackName(e.target.value)}
+                placeholder="my-app"
+                spellCheck={false}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Compose YAML" hint="Sent on stdin to docker stack deploy">
+              <textarea
+                rows={16}
+                value={composeYaml}
+                onChange={(e) => setComposeYaml(e.target.value)}
+                spellCheck={false}
+                className={`${textareaClass} h-96`}
+              />
+            </Field>
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={stackPrune}
+                onChange={(e) => setStackPrune(e.target.checked)}
+                className="accent-blue-500"
+              />
+              <code className="text-xs">--prune</code>
+              <span className="text-xs text-slate-500">
+                Remove services no longer referenced in the compose file
+              </span>
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={
+                  submitting || !canSubmitService || !stackName.trim() || !composeYaml.trim()
+                }
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+              >
+                {submitting ? (
+                  <Loader2Icon className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Layers3Icon className="w-4 h-4" />
+                )}
+                {submitting ? 'Deploying stack…' : 'Deploy stack'}
+              </button>
+              {!canSubmitService && (
+                <span className="text-xs text-amber-300">
+                  Switch to a swarm manager (this host is {swarmRole ?? 'unknown'}).
+                </span>
+              )}
             </div>
           </>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Mode">
-                <select
-                  value={serviceMode}
-                  onChange={(e) => setServiceMode(e.target.value as typeof serviceMode)}
-                  className={inputClass}
-                >
-                  <option value="replicated">replicated</option>
-                  <option value="global">global</option>
-                </select>
-              </Field>
-              <Field label="Replicas" hint={serviceMode === 'global' ? '(ignored)' : ''}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Image" required>
                 <input
-                  type="number"
-                  min={0}
-                  value={replicas}
-                  onChange={(e) => setReplicas(e.target.value)}
-                  disabled={serviceMode === 'global'}
+                  type="text"
+                  required
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  placeholder="nginx:1.27-alpine"
+                  spellCheck={false}
                   className={inputClass}
                 />
               </Field>
-              <Field label="Restart condition">
-                <select
-                  value={restartCondition}
-                  onChange={(e) => setRestartCondition(e.target.value as typeof restartCondition)}
+              <Field
+                label={mode === 'service' ? 'Service name' : 'Container name (optional)'}
+                required={mode === 'service'}
+              >
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required={mode === 'service'}
+                  placeholder={mode === 'service' ? 'my-app' : '(auto-generated)'}
+                  spellCheck={false}
                   className={inputClass}
-                >
-                  <option value="any">any</option>
-                  <option value="on-failure">on-failure</option>
-                  <option value="none">none</option>
-                </select>
+                />
               </Field>
             </div>
-            <Field label="Mounts" hint="One per line. type=bind,source=...,target=... or src=...,dst=...">
+
+            <Field label="Ports" hint="One per line. host:container[/proto]">
               <textarea
                 rows={2}
-                value={mounts}
-                onChange={(e) => setMounts(e.target.value)}
-                placeholder="type=volume,source=app-data,target=/data"
+                value={ports}
+                onChange={(e) => setPorts(e.target.value)}
+                placeholder={'80:80\n8080:8080/tcp'}
                 className={textareaClass}
               />
             </Field>
-            <Field label="Networks" hint="One overlay network name per line">
+
+            <Field label="Environment" hint="One KEY=value per line">
               <textarea
                 rows={2}
-                value={networks}
-                onChange={(e) => setNetworks(e.target.value)}
-                placeholder="ingress"
+                value={env}
+                onChange={(e) => setEnv(e.target.value)}
+                placeholder={'TZ=UTC\nLOG_LEVEL=info'}
                 className={textareaClass}
               />
             </Field>
-            <Field label="Placement constraints" hint='One per line, e.g. node.role==manager'>
-              <textarea
-                rows={2}
-                value={constraints}
-                onChange={(e) => setConstraints(e.target.value)}
-                placeholder="node.role==worker"
-                className={textareaClass}
+
+            {mode === 'container' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Field label="Volumes" hint="One per line. host:container[:ro]">
+                    <textarea
+                      rows={2}
+                      value={volumes}
+                      onChange={(e) => setVolumes(e.target.value)}
+                      placeholder="/var/log:/logs:ro"
+                      className={textareaClass}
+                    />
+                  </Field>
+                  <Field label="Network">
+                    <input
+                      type="text"
+                      value={network}
+                      onChange={(e) => setNetwork(e.target.value)}
+                      placeholder="bridge"
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Field label="Restart policy">
+                    <select
+                      value={restartPolicy}
+                      onChange={(e) => setRestartPolicy(e.target.value as typeof restartPolicy)}
+                      className={inputClass}
+                    >
+                      <option value="no">no</option>
+                      <option value="always">always</option>
+                      <option value="unless-stopped">unless-stopped</option>
+                      <option value="on-failure">on-failure</option>
+                    </select>
+                  </Field>
+                  <label className="flex items-center gap-2 self-end pb-1.5 text-sm text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={pull}
+                      onChange={(e) => setPull(e.target.checked)}
+                      className="accent-blue-500"
+                    />
+                    <code className="text-xs">--pull always</code>
+                  </label>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Field label="Mode">
+                    <select
+                      value={serviceMode}
+                      onChange={(e) => setServiceMode(e.target.value as typeof serviceMode)}
+                      className={inputClass}
+                    >
+                      <option value="replicated">replicated</option>
+                      <option value="global">global</option>
+                    </select>
+                  </Field>
+                  <Field label="Replicas" hint={serviceMode === 'global' ? '(ignored)' : ''}>
+                    <input
+                      type="number"
+                      min={0}
+                      value={replicas}
+                      onChange={(e) => setReplicas(e.target.value)}
+                      disabled={serviceMode === 'global'}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Restart condition">
+                    <select
+                      value={restartCondition}
+                      onChange={(e) => setRestartCondition(e.target.value as typeof restartCondition)}
+                      className={inputClass}
+                    >
+                      <option value="any">any</option>
+                      <option value="on-failure">on-failure</option>
+                      <option value="none">none</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field
+                  label="Mounts"
+                  hint="One per line. type=bind,source=...,target=... or src=...,dst=..."
+                >
+                  <textarea
+                    rows={2}
+                    value={mounts}
+                    onChange={(e) => setMounts(e.target.value)}
+                    placeholder="type=volume,source=app-data,target=/data"
+                    className={textareaClass}
+                  />
+                </Field>
+                <Field label="Networks" hint="One overlay network name per line">
+                  <textarea
+                    rows={2}
+                    value={networks}
+                    onChange={(e) => setNetworks(e.target.value)}
+                    placeholder="ingress"
+                    className={textareaClass}
+                  />
+                </Field>
+                <Field label="Placement constraints" hint='One per line, e.g. node.role==manager'>
+                  <textarea
+                    rows={2}
+                    value={constraints}
+                    onChange={(e) => setConstraints(e.target.value)}
+                    placeholder="node.role==worker"
+                    className={textareaClass}
+                  />
+                </Field>
+              </>
+            )}
+
+            <Field label="Command (optional)" hint="Overrides the image's CMD. Quotes preserved.">
+              <input
+                type="text"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="--help"
+                spellCheck={false}
+                className={inputClass}
               />
             </Field>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={submitting || !image.trim() || (mode === 'service' && !canSubmitService)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+              >
+                {submitting ? (
+                  <Loader2Icon className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RocketIcon className="w-4 h-4" />
+                )}
+                {submitting
+                  ? mode === 'container'
+                    ? 'Creating container…'
+                    : 'Creating service…'
+                  : mode === 'container'
+                    ? 'Create container'
+                    : 'Create service'}
+              </button>
+              {mode === 'service' && !canSubmitService && (
+                <span className="text-xs text-amber-300">
+                  Switch to a swarm manager (this host is {swarmRole ?? 'unknown'}).
+                </span>
+              )}
+            </div>
           </>
         )}
-
-        <Field label="Command (optional)" hint="Overrides the image's CMD. Quotes preserved.">
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            placeholder="--help"
-            spellCheck={false}
-            className={inputClass}
-          />
-        </Field>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={submitting || !image.trim() || (mode === 'service' && !canSubmitService)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
-          >
-            {submitting ? <Loader2Icon className="w-4 h-4 animate-spin" /> : <RocketIcon className="w-4 h-4" />}
-            {submitting
-              ? mode === 'container'
-                ? 'Creating container…'
-                : 'Creating service…'
-              : mode === 'container'
-                ? 'Create container'
-                : 'Create service'}
-          </button>
-          {mode === 'service' && !canSubmitService && (
-            <span className="text-xs text-amber-300">
-              Switch to a swarm manager (this host is{' '}
-              {swarmRole ?? 'unknown'}) to create a service.
-            </span>
-          )}
-        </div>
       </form>
 
       {outcome && <OutcomePanel outcome={outcome} mode={mode} />}
     </div>
   );
 }
-
-const inputClass =
-  'w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
-
-const textareaClass =
-  'w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
 
 function Field({
   label,
@@ -438,6 +524,8 @@ function ModeButton({
 }
 
 function OutcomePanel({ outcome, mode }: { outcome: NonNullable<Outcome>; mode: Mode }) {
+  const verb =
+    mode === 'container' ? 'Container' : mode === 'service' ? 'Service' : 'Stack';
   return (
     <div
       className={`mt-4 rounded-md border ${
@@ -458,21 +546,19 @@ function OutcomePanel({ outcome, mode }: { outcome: NonNullable<Outcome>; mode: 
         )}
         <div className="min-w-0">
           {outcome.kind === 'success' ? (
-            <>
-              <div>
-                {mode === 'container' ? 'Container' : 'Service'} created.
-                {outcome.id && (
-                  <>
-                    {' '}
-                    ID <code className="text-slate-200">{outcome.id.slice(0, 12)}</code>
-                  </>
-                )}
-              </div>
-            </>
-          ) : (
             <div>
-              {outcome.error ?? 'Docker rejected the request. See log below.'}
+              {verb} {mode === 'stack' ? 'deployed' : 'created'}.
+              {outcome.id && (
+                <>
+                  {' '}
+                  <code className="text-slate-200">
+                    {outcome.id.length > 32 ? `${outcome.id.slice(0, 12)}…` : outcome.id}
+                  </code>
+                </>
+              )}
             </div>
+          ) : (
+            <div>{outcome.error ?? 'Docker rejected the request. See log below.'}</div>
           )}
         </div>
       </div>

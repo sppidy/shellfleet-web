@@ -161,6 +161,66 @@ export type DockerLogsEndPayload = {
   error: string | null;
 };
 
+export type JournalLogsChunkPayload = {
+  unit: string;
+  data: string;
+};
+
+export type JournalLogsEndPayload = {
+  unit: string;
+  error: string | null;
+};
+
+export type SwarmTask = {
+  id: string;
+  name: string;
+  node: string;
+  desired_state: string;
+  current_state: string;
+  error: string;
+  image: string;
+};
+
+export type SwarmServiceSpecSummary = {
+  image: string;
+  image_digest: string;
+  mode: string;
+  replicas: number | null;
+  created_at: string;
+  updated_at: string;
+  env: string[];
+  mounts: string[];
+  networks: string[];
+  constraints: string[];
+  published_ports: string[];
+};
+
+export type SwarmServiceInspectPayload = {
+  name: string;
+  success: boolean;
+  tasks: SwarmTask[];
+  spec: SwarmServiceSpecSummary | null;
+  log: string;
+  error: string | null;
+};
+
+export type SwarmStackDeployResponse = {
+  stack_name: string;
+  success: boolean;
+  log: string;
+  error: string | null;
+};
+
+export type AuditRow = {
+  id: number;
+  ts: number;
+  actor: string | null;
+  agent_id: string | null;
+  kind: string;
+  ok: number;
+  detail: string | null;
+};
+
 export type AgentMessagePayload =
   | { type: 'Register'; payload: { hostname: string; protocol_version?: number } }
   | { type: 'RegisterAck'; payload: { agent_id: string } }
@@ -200,7 +260,15 @@ export type AgentMessagePayload =
   | { type: 'DockerLogsRequest'; payload: { container_id: string; tail?: number; follow?: boolean } }
   | { type: 'DockerLogsChunk'; payload: DockerLogsChunkPayload }
   | { type: 'DockerLogsStop'; payload: { container_id: string } }
-  | { type: 'DockerLogsEnd'; payload: DockerLogsEndPayload };
+  | { type: 'DockerLogsEnd'; payload: DockerLogsEndPayload }
+  | { type: 'JournalLogsRequest'; payload: { unit: string; lines?: number; follow?: boolean } }
+  | { type: 'JournalLogsChunk'; payload: JournalLogsChunkPayload }
+  | { type: 'JournalLogsStop'; payload: { unit: string } }
+  | { type: 'JournalLogsEnd'; payload: JournalLogsEndPayload }
+  | { type: 'SwarmServiceInspectRequest'; payload: { name: string } }
+  | { type: 'SwarmServiceInspectResponse'; payload: SwarmServiceInspectPayload }
+  | { type: 'SwarmStackDeployRequest'; payload: { stack_name: string; compose_yaml: string; prune: boolean } }
+  | { type: 'SwarmStackDeployResponse'; payload: SwarmStackDeployResponse };
 
 export type UiMessage =
   | { type: 'ListAgentsRequest' }

@@ -22,6 +22,8 @@ import {
   ScrollTextIcon,
 } from 'lucide-react';
 import LogViewer from './LogViewer';
+import SwarmServiceDrawer from './SwarmServiceDrawer';
+import { useUi } from './providers/UiProvider';
 
 const REFRESH_MS = 10_000;
 const TIMEOUT_MS = 8_000;
@@ -54,6 +56,8 @@ export default function Containers({ agentId }: { agentId: string }) {
     text: string;
   } | null>(null);
   const [logViewer, setLogViewer] = useState<{ id: string; name: string } | null>(null);
+  const [serviceDrawer, setServiceDrawer] = useState<string | null>(null);
+  const { confirm } = useUi();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -226,6 +230,14 @@ export default function Containers({ agentId }: { agentId: string }) {
         />
       )}
 
+      {serviceDrawer && (
+        <SwarmServiceDrawer
+          agentId={agentId}
+          serviceName={serviceDrawer}
+          onClose={() => setServiceDrawer(null)}
+        />
+      )}
+
       {docker.swarm_role === 'manager' && (
         <section>
           <SectionHeader
@@ -254,21 +266,29 @@ export default function Containers({ agentId }: { agentId: string }) {
                       service={s}
                       pending={pendingAction?.name === s.name ? pendingAction.action : null}
                       disabled={pendingAction !== null && pendingAction.name !== s.name}
-                      onAction={(action) => {
+                      onShowDetail={() => setServiceDrawer(s.name)}
+                      onAction={async (action) => {
                         let payload: SwarmAction;
                         let kindLabel: 'scale' | 'update' | 'remove';
                         if (action === 'forceupdate') {
                           payload = { kind: 'ForceUpdate' };
                           kindLabel = 'update';
-                          if (!confirm(`Force-update ${s.name}? This rolls every task even if the spec hasn't changed.`)) {
-                            return;
-                          }
+                          const ok = await confirm({
+                            title: `Force-update ${s.name}?`,
+                            description: 'This rolls every task even if the spec hasn\'t changed.',
+                            confirmLabel: 'Force update',
+                          });
+                          if (!ok) return;
                         } else if (action === 'remove') {
                           payload = { kind: 'Remove' };
                           kindLabel = 'remove';
-                          if (!confirm(`Remove swarm service ${s.name}? This stops every replica and deletes the spec.`)) {
-                            return;
-                          }
+                          const ok = await confirm({
+                            title: `Remove ${s.name}?`,
+                            description: 'Stops every replica and deletes the service spec.',
+                            confirmLabel: 'Remove',
+                            destructive: true,
+                          });
+                          if (!ok) return;
                         } else {
                           const replicas = window.prompt(
                             `Scale ${s.name} to how many replicas?`,
@@ -402,21 +422,28 @@ function SwarmServiceRow({
   pending,
   disabled,
   onAction,
+  onShowDetail,
 }: {
   service: SwarmService;
   pending: 'scale' | 'update' | 'remove' | null;
   disabled: boolean;
   onAction: (action: 'scale' | 'forceupdate' | 'remove') => void;
+  onShowDetail: () => void;
 }) {
   return (
     <li className="px-3 py-2 bg-slate-900">
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+        <button
+          type="button"
+          onClick={onShowDetail}
+          className="min-w-0 flex-1 text-left hover:opacity-90 transition-opacity"
+          title="Inspect"
+        >
           <div className="font-medium text-slate-100 text-sm truncate">{service.name}</div>
           <div className="text-xs text-slate-500 truncate" title={service.image}>
             {service.image}
           </div>
-        </div>
+        </button>
         <div className="flex items-center gap-3 text-xs text-slate-400 shrink-0">
           <span>{service.mode}</span>
           <span className="font-mono text-slate-200">{service.replicas}</span>

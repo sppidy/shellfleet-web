@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/components/providers/WebSocketProvider';
 import { useSession } from '@/components/providers/SessionProvider';
 import AgentList from '@/components/AgentList';
@@ -25,16 +25,65 @@ import {
   GaugeIcon,
   PackageIcon,
   RocketIcon,
+  ActivityIcon,
 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'containers' | 'deploy' | 'updates' | 'config';
 
+const TABS: Tab[] = ['dashboard', 'containers', 'deploy', 'updates', 'config'];
+
 export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 flex items-center justify-center text-slate-500">
+          <Loader2Icon className="w-6 h-6 animate-spin" />
+        </div>
+      }
+    >
+      <HomeBody />
+    </Suspense>
+  );
+}
+
+function HomeBody() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isConnected, agents } = useWebSocket();
   const { user, status, logout } = useSession();
-  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+
+  const agentFromUrl = searchParams.get('agent');
+  const tabFromUrl = searchParams.get('tab');
+  const initialAgent =
+    agentFromUrl && agents.includes(agentFromUrl)
+      ? agentFromUrl
+      : agentFromUrl && agents.includes(`${agentFromUrl}-id`)
+        ? `${agentFromUrl}-id`
+        : null;
+  const initialTab: Tab = TABS.includes(tabFromUrl as Tab) ? (tabFromUrl as Tab) : 'dashboard';
+
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(initialAgent);
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  // When URL params change (e.g. via browser back), pull them into state.
+  useEffect(() => {
+    if (agentFromUrl === null) {
+      setSelectedAgent(null);
+    } else {
+      const candidate = agents.includes(agentFromUrl)
+        ? agentFromUrl
+        : agents.includes(`${agentFromUrl}-id`)
+          ? `${agentFromUrl}-id`
+          : null;
+      setSelectedAgent(candidate);
+    }
+    if (TABS.includes(tabFromUrl as Tab)) {
+      setActiveTab(tabFromUrl as Tab);
+    } else if (tabFromUrl === null) {
+      setActiveTab('dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentFromUrl, tabFromUrl, agents.length]);
 
   useEffect(() => {
     if (status === 'guest') {
@@ -47,6 +96,22 @@ export default function Home() {
       setSelectedAgent(null);
     }
   }, [agents, selectedAgent]);
+
+  // Keep the URL in sync with the current selection so it's bookmarkable.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedAgent) {
+      params.set('agent', selectedAgent.replace(/-id$/, ''));
+      if (activeTab !== 'dashboard') params.set('tab', activeTab);
+    }
+    const next = params.toString();
+    const current = searchParams.toString();
+    if (next !== current) {
+      router.replace(next ? `/?${next}` : '/', { scroll: false });
+    }
+    // searchParams changing here would loop; rely on selectedAgent/activeTab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAgent, activeTab]);
 
   if (status === 'loading' || status === 'guest') {
     return (
@@ -107,6 +172,14 @@ export default function Home() {
           >
             <KeyIcon className="w-3.5 h-3.5" />
             Manage tokens
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/activity')}
+            className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 px-3 rounded-md border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
+          >
+            <ActivityIcon className="w-3.5 h-3.5" />
+            Activity
           </button>
         </div>
 
