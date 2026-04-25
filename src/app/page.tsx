@@ -69,17 +69,45 @@ function HomeBody() {
       : agentFromUrl && agents.includes(`${agentFromUrl}-id`)
         ? `${agentFromUrl}-id`
         : null;
+  // initialTab uses the full TABS list (we don't yet know whether
+  // backups is gated on; the effect below corrects activeTab if it
+  // landed on `backups` while the feature flag is off).
   const initialTab: Tab = TABS.includes(tabFromUrl as Tab) ? (tabFromUrl as Tab) : 'dashboard';
 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(initialAgent);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [backupsEnabled, setBackupsEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await apiFetch('/api/features');
+        if (!res.ok) return;
+        const data: { backups_enabled: boolean } = await res.json();
+        if (!cancelled) setBackupsEnabled(data.backups_enabled);
+      } catch {
+        /* ignore — leave disabled */
+      }
+    };
+    void load();
+  }, []);
 
   // Auto-close mobile drawer when the user picks an agent / tab.
   useEffect(() => {
     setSidebarOpen(false);
   }, [selectedAgent, activeTab]);
+
+  // If the operator deep-linked to ?tab=backups but backups is gated
+  // off on the server, fall back to the dashboard so they don't see
+  // an empty tab.
+  useEffect(() => {
+    if (!backupsEnabled && activeTab === 'backups') {
+      setActiveTab('dashboard');
+    }
+  }, [backupsEnabled, activeTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -365,12 +393,14 @@ function HomeBody() {
                   icon={<ActivitySquareIcon className="w-4 h-4 mr-2" />}
                   label="Health"
                 />
-                <TabButton
-                  active={activeTab === 'backups'}
-                  onClick={() => setActiveTab('backups')}
-                  icon={<ArchiveIcon className="w-4 h-4 mr-2" />}
-                  label="Backups"
-                />
+                {backupsEnabled && (
+                  <TabButton
+                    active={activeTab === 'backups'}
+                    onClick={() => setActiveTab('backups')}
+                    icon={<ArchiveIcon className="w-4 h-4 mr-2" />}
+                    label="Backups"
+                  />
+                )}
                 <TabButton
                   active={activeTab === 'config'}
                   onClick={() => setActiveTab('config')}
@@ -411,7 +441,7 @@ function HomeBody() {
                 <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full">
                   <HealthProbes agentId={selectedAgent} />
                 </div>
-              ) : activeTab === 'backups' ? (
+              ) : activeTab === 'backups' && backupsEnabled ? (
                 <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full">
                   <Backups agentId={selectedAgent} />
                 </div>

@@ -211,6 +211,10 @@ export type SwarmStackDeployResponse = {
   error: string | null;
 };
 
+export type Features = {
+  backups_enabled: boolean;
+};
+
 export type Notification = {
   id: number;
   kind: string;
