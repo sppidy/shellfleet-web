@@ -55,23 +55,33 @@ export default function TokensPage() {
     refresh();
   }, [refresh]);
 
-  // Revoke is keyed by the full token string. We only have the preview here,
-  // so the only ergonomic flow is: prompt the operator for the full token
-  // value (they can copy it from the agent's /etc/sys-manager/agent-token.txt
-  // if needed), and revoke that. Simpler alternative shipped here: ask the
-  // server for revoke-by-hostname via a confirmation prompt in a follow-up.
   const handleRevoke = async (row: TokenRow) => {
-    const fullToken = window.prompt(
-      `To revoke the token for ${row.hostname ?? row.token_preview}, paste the full token value from /etc/sys-manager/agent-token.txt on that host.`,
-    );
-    if (!fullToken) return;
+    // Prefer revoking by hostname — the operator only sees the preview here
+    // and shouldn't have to SSH + cat the agent-token file just to revoke.
+    // Fall back to a token prompt only when the row has never connected
+    // (no hostname recorded yet).
+    let body: Record<string, string>;
+    if (row.hostname) {
+      const ok = window.confirm(
+        `Revoke pairing for ${row.hostname}? The agent will fail its next reconnect and need to be re-paired through /device.`,
+      );
+      if (!ok) return;
+      body = { hostname: row.hostname };
+    } else {
+      const fullToken = window.prompt(
+        `This token has never connected, so we can't match it by hostname. Paste the full token value to revoke (or cancel).`,
+      );
+      if (!fullToken) return;
+      body = { token: fullToken.trim() };
+    }
+
     setRevoking(row.token_preview);
     try {
       const res = await fetch('/api/tokens/revoke', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ token: fullToken.trim() }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const text = await res.text();
