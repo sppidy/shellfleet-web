@@ -10,19 +10,12 @@ import ServiceList from '@/components/ServiceList';
 import Terminal from '@/components/Terminal';
 import ConfigEditor from '@/components/ConfigEditor';
 import SystemStats from '@/components/SystemStats';
-import Containers from '@/components/Containers';
-import ContainerImages from '@/components/ContainerImages';
-import ContainerNetworks from '@/components/ContainerNetworks';
-import ContainerVolumes from '@/components/ContainerVolumes';
-import SwarmStacks from '@/components/SwarmStacks';
-import ContainerStats from '@/components/ContainerStats';
-import SystemPrune from '@/components/SystemPrune';
+import DockerHub, { DOCKER_SUBTABS, type DockerSubtab } from '@/components/DockerHub';
 import AptManager from '@/components/AptManager';
 import Metrics from '@/components/Metrics';
 import JournalStream from '@/components/JournalStream';
 import HSplitter from '@/components/HSplitter';
 import FleetOverview from '@/components/FleetOverview';
-import Deploy from '@/components/Deploy';
 import HealthProbes from '@/components/HealthProbes';
 import Backups from '@/components/Backups';
 import AgentLabels from '@/components/AgentLabels';
@@ -31,16 +24,9 @@ import { Loader2Icon, MenuIcon, XIcon } from 'lucide-react';
 
 type Tab =
   | 'dashboard'
-  | 'containers'
-  | 'stats'
+  | 'docker'
   | 'metrics'
   | 'journal'
-  | 'images'
-  | 'networks'
-  | 'volumes'
-  | 'stacks'
-  | 'prune'
-  | 'deploy'
   | 'updates'
   | 'health'
   | 'backups'
@@ -48,16 +34,9 @@ type Tab =
 
 const TABS: Tab[] = [
   'dashboard',
-  'containers',
-  'stats',
+  'docker',
   'metrics',
   'journal',
-  'images',
-  'networks',
-  'volumes',
-  'stacks',
-  'prune',
-  'deploy',
   'updates',
   'health',
   'backups',
@@ -66,21 +45,28 @@ const TABS: Tab[] = [
 
 const TAB_DEFS: { id: Tab; label: string; badge?: () => string | null }[] = [
   { id: 'dashboard', label: 'overview' },
-  { id: 'containers', label: 'containers' },
-  { id: 'stats', label: 'stats' },
+  { id: 'docker', label: 'docker' },
   { id: 'metrics', label: 'metrics' },
   { id: 'journal', label: 'journal' },
-  { id: 'images', label: 'images' },
-  { id: 'networks', label: 'networks' },
-  { id: 'volumes', label: 'volumes' },
-  { id: 'stacks', label: 'stacks' },
-  { id: 'prune', label: 'prune' },
-  { id: 'deploy', label: 'deploy' },
   { id: 'updates', label: 'updates' },
   { id: 'health', label: 'health' },
   { id: 'backups', label: 'backups' },
   { id: 'config', label: 'config' },
 ];
+
+// Old top-level tabs that have moved under "docker". Keep the names
+// recognised so deep-links + bookmarks land on the right subtab
+// instead of falling back to overview.
+const LEGACY_DOCKER_TABS: Record<string, DockerSubtab> = {
+  containers: 'containers',
+  stats: 'stats',
+  images: 'images',
+  networks: 'networks',
+  volumes: 'volumes',
+  stacks: 'stacks',
+  deploy: 'deploy',
+  prune: 'prune',
+};
 
 export default function Home() {
   return (
@@ -104,16 +90,31 @@ function HomeBody() {
 
   const agentFromUrl = searchParams.get('agent');
   const tabFromUrl = searchParams.get('tab');
+  const dockerFromUrl = searchParams.get('docker');
   const initialAgent =
     agentFromUrl && agents.includes(agentFromUrl)
       ? agentFromUrl
       : agentFromUrl && agents.includes(`${agentFromUrl}-id`)
         ? `${agentFromUrl}-id`
         : null;
-  const initialTab: Tab = TABS.includes(tabFromUrl as Tab) ? (tabFromUrl as Tab) : 'dashboard';
+  // Resolve `?tab=` against current tabs; redirect legacy docker subtabs
+  // (containers/images/...) to the new `docker` parent + the right
+  // subtab below.
+  const legacyDockerSub = tabFromUrl && LEGACY_DOCKER_TABS[tabFromUrl];
+  const initialTab: Tab = legacyDockerSub
+    ? 'docker'
+    : TABS.includes(tabFromUrl as Tab)
+      ? (tabFromUrl as Tab)
+      : 'dashboard';
+  const initialDockerSub: DockerSubtab = legacyDockerSub
+    ? legacyDockerSub
+    : DOCKER_SUBTABS.includes(dockerFromUrl as DockerSubtab)
+      ? (dockerFromUrl as DockerSubtab)
+      : 'containers';
 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(initialAgent);
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [dockerSubtab, setDockerSubtab] = useState<DockerSubtab>(initialDockerSub);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [backupsEnabled, setBackupsEnabled] = useState(false);
@@ -174,13 +175,20 @@ function HomeBody() {
           : null;
       setSelectedAgent(candidate);
     }
-    if (TABS.includes(tabFromUrl as Tab)) {
+    const legacy = tabFromUrl && LEGACY_DOCKER_TABS[tabFromUrl];
+    if (legacy) {
+      setActiveTab('docker');
+      setDockerSubtab(legacy);
+    } else if (TABS.includes(tabFromUrl as Tab)) {
       setActiveTab(tabFromUrl as Tab);
     } else if (tabFromUrl === null) {
       setActiveTab('dashboard');
     }
+    if (dockerFromUrl && DOCKER_SUBTABS.includes(dockerFromUrl as DockerSubtab)) {
+      setDockerSubtab(dockerFromUrl as DockerSubtab);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentFromUrl, tabFromUrl, agents.length]);
+  }, [agentFromUrl, tabFromUrl, dockerFromUrl, agents.length]);
 
   useEffect(() => {
     if (status === 'guest') {
@@ -201,6 +209,12 @@ function HomeBody() {
     if (selectedAgent) {
       params.set('agent', selectedAgent.replace(/-id$/, ''));
       if (activeTab !== 'dashboard') params.set('tab', activeTab);
+      // Persist the docker subtab only when relevant — keeps the URL
+      // tidy for non-docker tabs and drops "?docker=containers" since
+      // that's the default.
+      if (activeTab === 'docker' && dockerSubtab !== 'containers') {
+        params.set('docker', dockerSubtab);
+      }
     }
     const next = params.toString();
     const current = searchParams.toString();
@@ -208,7 +222,7 @@ function HomeBody() {
       router.replace(next ? `/?${next}` : '/', { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgent, activeTab]);
+  }, [selectedAgent, activeTab, dockerSubtab]);
 
   if (status !== 'authed') {
     return (
@@ -526,26 +540,16 @@ function HomeBody() {
                     </div>
                   }
                 />
-              ) : activeTab === 'containers' ? (
-                <Containers agentId={selectedAgent} />
-              ) : activeTab === 'images' ? (
-                <ContainerImages agentId={selectedAgent} />
-              ) : activeTab === 'networks' ? (
-                <ContainerNetworks agentId={selectedAgent} />
-              ) : activeTab === 'volumes' ? (
-                <ContainerVolumes agentId={selectedAgent} />
-              ) : activeTab === 'stacks' ? (
-                <SwarmStacks agentId={selectedAgent} />
-              ) : activeTab === 'stats' ? (
-                <ContainerStats agentId={selectedAgent} />
+              ) : activeTab === 'docker' ? (
+                <DockerHub
+                  agentId={selectedAgent}
+                  subtab={dockerSubtab}
+                  onSubtabChange={setDockerSubtab}
+                />
               ) : activeTab === 'metrics' ? (
                 <Metrics agentId={selectedAgent} />
               ) : activeTab === 'journal' ? (
                 <JournalStream agentId={selectedAgent} />
-              ) : activeTab === 'prune' ? (
-                <SystemPrune agentId={selectedAgent} />
-              ) : activeTab === 'deploy' ? (
-                <Deploy agentId={selectedAgent} />
               ) : activeTab === 'updates' ? (
                 <AptManager agentId={selectedAgent} />
               ) : activeTab === 'health' ? (
