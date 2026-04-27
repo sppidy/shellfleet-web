@@ -13,6 +13,13 @@ type TerminalProps = {
   shell?: string;
   title?: string;
   /**
+   * Stable id for this PTY on the agent. Required for host shells so
+   * multiple tabs against the same agent each get their own PTY. Auto-
+   * generated if absent. Container-exec sessions ignore this and use
+   * the wire-level empty-string sentinel.
+   */
+  sessionId?: string;
+  /**
    * When false, the host renders the component but hides it (used by
    * the multi-tab multiplexer to keep PTY state across tab switches).
    * Defaults to true. The xterm instance refits whenever this flips
@@ -26,6 +33,7 @@ export default function Terminal({
   containerId,
   shell,
   title,
+  sessionId,
   visible = true,
 }: TerminalProps) {
   const { sendToAgent, onAgentMessage } = useWebSocket();
@@ -34,6 +42,13 @@ export default function Terminal({
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+
+  // Wire-level session id. Container-exec uses the empty-string
+  // sentinel (agent routes on that); host shells get a UUID per
+  // mount, either supplied by the parent or generated here.
+  const sessionIdRef = useRef<string>(
+    containerId ? '' : (sessionId ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `t-${Math.random().toString(36).slice(2)}-${Date.now()}`))
+  );
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -79,12 +94,14 @@ export default function Terminal({
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    const sid = sessionIdRef.current;
+
     term.onData((data) => {
       const encoder = new TextEncoder();
       const bytes = Array.from(encoder.encode(data));
       sendToAgent(agentId, {
         type: 'TerminalData',
-        payload: { data: bytes },
+        payload: { session_id: sid, data: bytes },
       });
     });
 
@@ -100,7 +117,7 @@ export default function Terminal({
       }
       sendToAgent(agentId, {
         type: 'TerminalResize',
-        payload: { cols: term.cols, rows: term.rows },
+        payload: { session_id: sid, cols: term.cols, rows: term.rows },
       });
     };
     const ro = new ResizeObserver(() => sendSize());
@@ -113,12 +130,17 @@ export default function Terminal({
         payload: { container_id: containerId, shell: shell ?? 'sh' },
       });
     } else {
-      sendToAgent(agentId, { type: 'StartTerminalRequest' });
+      sendToAgent(agentId, {
+        type: 'StartTerminalRequest',
+        payload: { session_id: sid },
+      });
     }
     setTimeout(sendSize, 100);
 
     const unsubscribe = onAgentMessage(agentId, (msg) => {
-      if (msg.type === 'TerminalData') {
+      // Only render bytes tagged with our session_id. Host shells use
+      // their UUID; container-exec uses the empty-string sentinel.
+      if (msg.type === 'TerminalData' && msg.payload.session_id === sid) {
         const bytes = new Uint8Array(msg.payload.data);
         xtermRef.current?.write(bytes);
       }
@@ -130,11 +152,15 @@ export default function Terminal({
       window.removeEventListener('resize', sendSize);
       // Tell the agent to drop the PTY rather than waiting for the
       // next WS disconnect to reap it. Container-exec already had
-      // this; host shells now do too via StopTerminalRequest.
+      // this; host shells now do too via StopTerminalRequest, scoped
+      // to our session_id so sibling tabs aren't affected.
       if (containerId) {
         sendToAgent(agentId, { type: 'DockerExecStopRequest' });
       } else {
-        sendToAgent(agentId, { type: 'StopTerminalRequest' });
+        sendToAgent(agentId, {
+          type: 'StopTerminalRequest',
+          payload: { session_id: sid },
+        });
       }
       term.dispose();
     };

@@ -10,18 +10,18 @@ import { Loader2Icon } from 'lucide-react';
 /**
  * Standalone multi-host terminal multiplexer.
  *
- * Each tab owns one Terminal component (one PTY per host). Tabs are
+ * Each tab owns one Terminal component (one PTY per tab). Tabs are
  * kept mounted across switches via display:none so scrollback +
  * shell history survive — closing a tab is the only way to drop the
  * PTY (which sends StopTerminalRequest down the WS).
  *
- * One PTY per host: trying to add a host that's already a tab just
- * focuses the existing tab. v2 could allow multiple sessions per host
- * with a session_id field on TerminalData / TerminalResize.
+ * Multiple tabs per agent are allowed since v14: each tab's
+ * session_id keys the agent's PTY map, so the operator can run
+ * several concurrent shells against the same host.
  */
 
 interface Tab {
-  id: string;       // stable ui id, agent-id-keyed
+  id: string;       // stable ui id; doubles as the wire-level session_id
   agentId: string;
 }
 
@@ -62,12 +62,13 @@ export default function TerminalPage() {
 
   const addTab = useCallback((agentId: string) => {
     setTabs((prev) => {
-      const existing = prev.find((t) => t.agentId === agentId);
-      if (existing) {
-        setActiveId(existing.id);
-        return prev;
-      }
-      const next: Tab = { id: agentId, agentId };
+      // Each tab gets its own UUID — agent keys host PTYs by it, so
+      // multiple tabs against the same host run independent shells.
+      const id =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `t-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+      const next: Tab = { id, agentId };
       setActiveId(next.id);
       return [...prev, next];
     });
@@ -131,7 +132,9 @@ export default function TerminalPage() {
     );
   }
 
-  const availableAgents = agents.filter((a) => !tabs.some((t) => t.agentId === a));
+  // All online agents are eligible; multiple tabs against the same
+  // agent are now allowed.
+  const availableAgents = agents;
 
   return (
     <div
@@ -182,7 +185,15 @@ export default function TerminalPage() {
         >
           {tabs.map((t) => {
             const isActive = t.id === activeId;
-            const label = t.agentId.replace(/-id$/, '');
+            // When the same agent has multiple tabs, suffix each label
+            // with a 1-based ordinal so the operator can tell them
+            // apart at a glance.
+            const sameAgent = tabs.filter((x) => x.agentId === t.agentId);
+            const ordinal = sameAgent.length > 1
+              ? sameAgent.findIndex((x) => x.id === t.id) + 1
+              : 0;
+            const base = t.agentId.replace(/-id$/, '');
+            const label = ordinal > 0 ? `${base} #${ordinal}` : base;
             return (
               <div
                 key={t.id}
@@ -236,9 +247,7 @@ export default function TerminalPage() {
             onClick={() => setPicking((p) => !p)}
             disabled={availableAgents.length === 0}
             title={
-              availableAgents.length === 0
-                ? 'every online agent is already a tab'
-                : 'add a host'
+              availableAgents.length === 0 ? 'no agents online' : 'add a tab'
             }
             style={{ height: 24, padding: '0 8px', fontSize: 11 }}
           >
@@ -322,9 +331,9 @@ export default function TerminalPage() {
               {`┌────────────────────────────────────┐
 │  no terminals open                 │
 │                                    │
-│  click '+ host' to start one       │
-│  one PTY per host; tabs preserve   │
-│  scrollback across switches        │
+│  click '+ host' to start one;      │
+│  multiple tabs per host are fine,  │
+│  tabs preserve scrollback          │
 └────────────────────────────────────┘`}
             </pre>
           </div>
@@ -340,6 +349,7 @@ export default function TerminalPage() {
             >
               <Terminal
                 agentId={t.agentId}
+                sessionId={t.id}
                 visible={t.id === activeId}
                 title={`shell · ${t.agentId.replace(/-id$/, '')}`}
               />

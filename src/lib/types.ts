@@ -413,9 +413,9 @@ export type AgentMessagePayload =
   | { type: 'ListServicesResponse'; payload: { services: ServiceInfo[] } }
   | { type: 'ControlServiceRequest'; payload: { name: string; action: string } }
   | { type: 'ControlServiceResponse'; payload: { name: string; success: boolean; error: string | null } }
-  | { type: 'StartTerminalRequest' }
-  | { type: 'TerminalData'; payload: { data: number[] } }
-  | { type: 'TerminalResize'; payload: { cols: number; rows: number } }
+  | { type: 'StartTerminalRequest'; payload: { session_id: string } }
+  | { type: 'TerminalData'; payload: { session_id: string; data: number[] } }
+  | { type: 'TerminalResize'; payload: { session_id: string; cols: number; rows: number } }
   | { type: 'ReadConfigRequest'; payload: { path: string } }
   | { type: 'ReadConfigResponse'; payload: { path: string; content: string; error: string | null } }
   | { type: 'WriteConfigRequest'; payload: { path: string; content: string } }
@@ -464,7 +464,7 @@ export type AgentMessagePayload =
   | { type: 'JournalStreamChunk'; payload: { stream_id: string; lines: string[] } }
   | { type: 'JournalStreamStop'; payload: { stream_id: string } }
   | { type: 'JournalStreamEnd'; payload: { stream_id: string; error: string | null } }
-  | { type: 'StopTerminalRequest' }
+  | { type: 'StopTerminalRequest'; payload: { session_id: string } }
   | { type: 'SwarmServiceInspectRequest'; payload: { name: string } }
   | { type: 'SwarmServiceInspectResponse'; payload: SwarmServiceInspectPayload }
   | { type: 'SwarmStackDeployRequest'; payload: { stack_name: string; compose_yaml: string; prune: boolean } }
