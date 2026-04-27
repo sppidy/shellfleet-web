@@ -32,6 +32,7 @@ export default function CommandPalette({
       { ico: '⚿', label: 'Manage tokens', meta: 'go', action: () => router.push('/tokens') },
       { ico: '＋', label: 'Connect new agent', meta: 'go', action: () => router.push('/device') },
       { ico: '⌘', label: 'Account & 2FA', meta: 'go', action: () => router.push('/security') },
+      { ico: '⌬', label: 'Admin · users & seats', meta: 'go', action: () => router.push('/admin') },
     ];
     const agentItems: Item[] = agents.map((a) => ({
       ico: '▢',

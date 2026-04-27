@@ -23,6 +23,7 @@ import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { FleetSnapshotsProvider } from "@/components/providers/FleetSnapshotsProvider";
 import { UiProvider } from "@/components/providers/UiProvider";
+import ViewerBanner from "@/components/ViewerBanner";
 
 export default function RootLayout({
   children,
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body>
         <UiProvider>
           <SessionProvider>
+            <ViewerBanner />
             <WebSocketProvider>
               <FleetSnapshotsProvider>{children}</FleetSnapshotsProvider>
             </WebSocketProvider>
