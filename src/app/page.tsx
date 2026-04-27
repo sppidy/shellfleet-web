@@ -18,6 +18,7 @@ import SwarmStacks from '@/components/SwarmStacks';
 import ContainerStats from '@/components/ContainerStats';
 import SystemPrune from '@/components/SystemPrune';
 import AptManager from '@/components/AptManager';
+import Metrics from '@/components/Metrics';
 import FleetOverview from '@/components/FleetOverview';
 import Deploy from '@/components/Deploy';
 import HealthProbes from '@/components/HealthProbes';
@@ -30,6 +31,7 @@ type Tab =
   | 'dashboard'
   | 'containers'
   | 'stats'
+  | 'metrics'
   | 'images'
   | 'networks'
   | 'volumes'
@@ -45,6 +47,7 @@ const TABS: Tab[] = [
   'dashboard',
   'containers',
   'stats',
+  'metrics',
   'images',
   'networks',
   'volumes',
@@ -61,6 +64,7 @@ const TAB_DEFS: { id: Tab; label: string; badge?: () => string | null }[] = [
   { id: 'dashboard', label: 'overview' },
   { id: 'containers', label: 'containers' },
   { id: 'stats', label: 'stats' },
+  { id: 'metrics', label: 'metrics' },
   { id: 'images', label: 'images' },
   { id: 'networks', label: 'networks' },
   { id: 'volumes', label: 'volumes' },
@@ -533,6 +537,8 @@ function HomeBody() {
                 <SwarmStacks agentId={selectedAgent} />
               ) : activeTab === 'stats' ? (
                 <ContainerStats agentId={selectedAgent} />
+              ) : activeTab === 'metrics' ? (
+                <Metrics agentId={selectedAgent} />
               ) : activeTab === 'prune' ? (
                 <SystemPrune agentId={selectedAgent} />
               ) : activeTab === 'deploy' ? (
