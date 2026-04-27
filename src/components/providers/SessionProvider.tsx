@@ -42,18 +42,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setRole(data.role);
           setMfaEnabled(data.mfa_enabled);
           setStatus(data.mfa_verified ? 'authed' : 'pending_mfa');
-        } else {
+          return;
+        }
+        // 401 — truly logged out (no cookie, expired, signature
+        // mismatch, session_epoch invalidated). Drop to guest.
+        if (res.status === 401) {
           setUser(null);
           setRole(null);
           setMfaEnabled(false);
           setStatus('guest');
+          return;
         }
+        // 403 / 429 / 5xx — transient (rate limit, edge challenge,
+        // server hiccup). Keeping the previous state avoids
+        // bouncing a mid-MFA user back to /login because Cloudflare
+        // briefly didn't like one of the burst /api/me calls.
+        // First-load case: still in 'loading' — leave it there;
+        // a subsequent refresh() (post-verify, etc.) will retry.
       })
       .catch(() => {
-        setUser(null);
-        setRole(null);
-        setMfaEnabled(false);
-        setStatus('guest');
+        // Network error: same defensive posture as 5xx — don't drop
+        // to guest unless we know the cookie is bad.
       });
   }, []);
 

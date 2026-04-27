@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AgentMessagePayload, UiMessage } from '@/lib/types';
+import { useSession } from './SessionProvider';
 
 type AgentMessageHandler = (msg: AgentMessagePayload) => void;
 
@@ -38,6 +39,7 @@ function resolveWsUrl(): string {
 const WS_URL = resolveWsUrl();
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
+  const { status } = useSession();
   const [agents, setAgents] = useState<string[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -82,6 +84,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    // Only open the WS once the session is fully authed. Connecting
+    // earlier (during /login, /mfa, /security with a pending-MFA
+    // cookie) just gets us 403'd by the server's WS-RBAC layer and
+    // produces a reconnect storm in the console + audit log.
+    if (status !== 'authed') {
+      setIsConnected(false);
+      setAgents([]);
+      return;
+    }
     stoppedRef.current = false;
 
     const connect = () => {
@@ -136,7 +147,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };
-  }, [dispatch]);
+  }, [dispatch, status]);
 
   const sendMessage = useCallback((msg: UiMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
