@@ -11,6 +11,7 @@ import Terminal from '@/components/Terminal';
 import ConfigEditor from '@/components/ConfigEditor';
 import SystemStats from '@/components/SystemStats';
 import DockerHub, { DOCKER_SUBTABS, type DockerSubtab } from '@/components/DockerHub';
+import KubernetesHub from '@/components/KubernetesHub';
 import AptManager from '@/components/AptManager';
 import Metrics from '@/components/Metrics';
 import JournalStream from '@/components/JournalStream';
@@ -25,6 +26,7 @@ import { Loader2Icon, MenuIcon, XIcon } from 'lucide-react';
 type Tab =
   | 'dashboard'
   | 'docker'
+  | 'kubernetes'
   | 'metrics'
   | 'journal'
   | 'updates'
@@ -35,6 +37,7 @@ type Tab =
 const TABS: Tab[] = [
   'dashboard',
   'docker',
+  'kubernetes',
   'metrics',
   'journal',
   'updates',
@@ -46,6 +49,7 @@ const TABS: Tab[] = [
 const TAB_DEFS: { id: Tab; label: string; badge?: () => string | null }[] = [
   { id: 'dashboard', label: 'overview' },
   { id: 'docker', label: 'docker' },
+  { id: 'kubernetes', label: 'k8s' },
   { id: 'metrics', label: 'metrics' },
   { id: 'journal', label: 'journal' },
   { id: 'updates', label: 'updates' },
@@ -124,6 +128,7 @@ function HomeBody() {
   const caps = (selectedAgent && agentCapabilities[selectedAgent]) || null;
   const dockerAvailable = caps === null || caps.includes('docker') || caps.includes('swarm');
   const swarmAvailable = caps === null || caps.includes('swarm');
+  const k8sAvailable = caps !== null && caps.includes('k8s');
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [backupsEnabled, setBackupsEnabled] = useState(false);
@@ -161,6 +166,14 @@ function HomeBody() {
       setActiveTab('dashboard');
     }
   }, [activeTab, caps, dockerAvailable]);
+
+  // Same fallback for the Kubernetes tab when the agent doesn't
+  // advertise k8s.
+  useEffect(() => {
+    if (activeTab === 'kubernetes' && caps !== null && !k8sAvailable) {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, caps, k8sAvailable]);
 
   // If swarm goes away while the operator is on the stacks subtab,
   // fall back to containers instead of rendering an empty pane.
@@ -267,6 +280,11 @@ function HomeBody() {
   const tabsToShow = TAB_DEFS.filter((t) => {
     if (t.id === 'backups' && !backupsEnabled) return false;
     if (t.id === 'docker' && !dockerAvailable) return false;
+    // Kubernetes tab only shows for agents that explicitly advertise
+    // the "k8s" capability — i.e. the sys-manager-agent-k8s package.
+    // Pre-v15 agents (caps null) still shouldn't see it; this is the
+    // one tab where "show on absence" would be wrong.
+    if (t.id === 'kubernetes' && !k8sAvailable) return false;
     return true;
   });
 
@@ -582,6 +600,8 @@ function HomeBody() {
                   onSubtabChange={setDockerSubtab}
                   swarmAvailable={swarmAvailable}
                 />
+              ) : activeTab === 'kubernetes' ? (
+                <KubernetesHub agentId={selectedAgent} />
               ) : activeTab === 'metrics' ? (
                 <Metrics agentId={selectedAgent} />
               ) : activeTab === 'journal' ? (

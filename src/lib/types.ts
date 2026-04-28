@@ -5,6 +5,17 @@ export type ServiceInfo = {
   active_state: string;
 };
 
+export type K8sPod = {
+  namespace: string;
+  name: string;
+  phase: string;
+  ready: string;
+  restarts: number;
+  age_secs: number;
+  node: string | null;
+  containers: string[];
+};
+
 export type SystemStatsPayload = {
   hostname: string;
   kernel: string;
@@ -413,6 +424,14 @@ export type AgentMessagePayload =
   | { type: 'ListServicesResponse'; payload: { services: ServiceInfo[] } }
   | { type: 'ControlServiceRequest'; payload: { name: string; action: string } }
   | { type: 'ControlServiceResponse'; payload: { name: string; success: boolean; error: string | null } }
+  | { type: 'K8sListPodsRequest' }
+  | {
+      type: 'K8sListPodsResponse';
+      payload: {
+        pods: K8sPod[];
+        error: string | null;
+      };
+    }
   | { type: 'StartTerminalRequest'; payload: { session_id: string } }
   | { type: 'TerminalData'; payload: { session_id: string; data: number[] } }
   | { type: 'TerminalResize'; payload: { session_id: string; cols: number; rows: number } }
