@@ -234,20 +234,41 @@ function BackupForm({
 }) {
   const ui = useUi();
   const [name, setName] = useState('');
-  const [paths, setPaths] = useState('/etc/sys-manager\n/etc/nginx');
+  const [paths, setPaths] = useState<string[]>(['/etc/sys-manager', '/etc/nginx']);
   const [dest, setDest] = useState('/var/backups/sys-manager');
   const [cronExpr, setCronExpr] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [mode, setMode] = useState<'tar' | 'restic'>('tar');
   const [submitting, setSubmitting] = useState(false);
 
+  // Common-paths quick-add chips. Click to append (deduped) — saves
+  // typing the obvious system folders. Operator can still type any
+  // path manually in the input rows.
+  const COMMON_PATHS = [
+    '/etc',
+    '/etc/sys-manager',
+    '/etc/nginx',
+    '/etc/letsencrypt',
+    '/root',
+    '/home',
+    '/var/lib/docker/volumes',
+    '/opt',
+    '/srv',
+  ];
+  const addPath = (p: string) => {
+    setPaths((prev) => (prev.includes(p) ? prev : [...prev, p]));
+  };
+  const updatePath = (idx: number, value: string) => {
+    setPaths((prev) => prev.map((v, i) => (i === idx ? value : v)));
+  };
+  const removePath = (idx: number) => {
+    setPaths((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    const pathList = paths
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+    const pathList = paths.map((p) => p.trim()).filter((p) => p.length > 0);
     if (pathList.length === 0) {
       ui.toast('error', 'At least one path required');
       return;
@@ -346,14 +367,74 @@ function BackupForm({
         </div>
 
         <div className="field">
-          <label>paths to back up (one per line)</label>
-          <textarea
-            className="textarea"
-            value={paths}
-            onChange={(e) => setPaths(e.target.value)}
-            rows={4}
-            required
-          />
+          <label>paths to back up</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {paths.map((p, i) => (
+              <div key={i} style={{ display: 'flex', gap: 4 }}>
+                <input
+                  className="input"
+                  type="text"
+                  value={p}
+                  onChange={(e) => updatePath(i, e.target.value)}
+                  placeholder="/path/to/folder"
+                  spellCheck={false}
+                  style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 12 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removePath(i)}
+                  className="btn ghost sm"
+                  title="remove this path"
+                  style={{ height: 28, padding: '0 8px' }}
+                  disabled={paths.length === 1}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPaths((prev) => [...prev, ''])}
+              className="btn sm"
+              style={{ alignSelf: 'flex-start', height: 24, fontSize: 11, padding: '0 10px' }}
+            >
+              ＋ add path
+            </button>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 4,
+              marginTop: 6,
+              fontSize: 11,
+              color: 'var(--fg-2)',
+            }}
+          >
+            <span style={{ color: 'var(--fg-3)', alignSelf: 'center' }}>quick add:</span>
+            {COMMON_PATHS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => addPath(p)}
+                disabled={paths.includes(p)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--line)',
+                  borderRadius: 12,
+                  color: paths.includes(p) ? 'var(--fg-3)' : 'var(--fg-2)',
+                  cursor: paths.includes(p) ? 'default' : 'pointer',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  padding: '2px 8px',
+                  opacity: paths.includes(p) ? 0.5 : 1,
+                }}
+                title={paths.includes(p) ? 'already added' : `add ${p}`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="field">
