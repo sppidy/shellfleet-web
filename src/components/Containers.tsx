@@ -124,7 +124,7 @@ export default function Containers({ agentId }: { agentId: string }) {
         >
           ⚠ This agent doesn&apos;t expose Docker info. Upgrade with{' '}
           <code style={{ background: 'rgba(0,0,0,0.2)', padding: '0 4px', borderRadius: 2 }}>
-            apt install --only-upgrade sys-manager-agent
+            apt install --only-upgrade shellfleet-agent
           </code>
           .
         </div>

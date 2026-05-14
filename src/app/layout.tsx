@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "sys-manager",
+  title: "ShellFleet",
   description: "Manage systemd services and Docker workloads across your fleet from one terminal-flavored dashboard.",
 };
 

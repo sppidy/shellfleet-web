@@ -403,11 +403,11 @@ export default function Metrics({ agentId }: { agentId: string }) {
                 : 'Metrics plugin not configured on this server.'}
             </div>
             <div style={{ fontFamily: 'var(--mono)', lineHeight: 1.6 }}>
-              sys-manager doesn&apos;t store time-series — point this at
+              ShellFleet doesn&apos;t store time-series — point this at
               your existing Prometheus and configure named panel
               templates. See{' '}
               <a
-                href="https://github.com/sppidy/sys-manager/blob/main/docs/METRICS.md"
+                href="https://github.com/sppidy/shellfleet/blob/main/docs/METRICS.md"
                 target="_blank"
                 rel="noreferrer"
                 style={{ color: 'var(--accent)' }}

@@ -341,7 +341,7 @@ function ProbeForm({
                 ? 'https://example.com/healthz'
                 : kind === 'tcp'
                   ? 'host:port'
-                  : 'script-name.sh (in /etc/sys-manager/probes.d/)'
+                  : 'script-name.sh (in /etc/shellfleet/probes.d/)'
             }
             required
           />

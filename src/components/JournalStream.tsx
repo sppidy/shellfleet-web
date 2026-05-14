@@ -12,7 +12,7 @@ const COMMON_UNITS = [
   'docker',
   'systemd',
   'cron',
-  'sys-manager-agent',
+  'shellfleet-agent',
 ];
 
 const MAX_BUFFER_LINES = 10_000;

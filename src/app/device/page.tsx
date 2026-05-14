@@ -116,7 +116,7 @@ export default function DeviceAuthPage() {
                   {`┌──────────────────────────────────────┐
 │  on the new host run:                │
 │                                      │
-│    $ journalctl -u sys-manager-agent │
+│    $ journalctl -u shellfleet-agent  │
 │      -n 20                           │
 │                                      │
 │  it will print an 8-char code.       │

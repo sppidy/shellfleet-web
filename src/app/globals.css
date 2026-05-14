@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 /* ====================================================================
-   sys-manager — terminal redesign (ported from design-handoff)
+   shellfleet — terminal redesign (ported from design-handoff)
    --------------------------------------------------------------------
    Single source of truth for the dark-by-default phosphor-green theme,
    the light theme, alt accents, and density modes. Design lives at
-   design-handoff/project/sys-manager.html.
+   design-handoff/project/shellfleet.html.
    ==================================================================== */
 
 :root,

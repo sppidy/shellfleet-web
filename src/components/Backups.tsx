@@ -234,8 +234,8 @@ function BackupForm({
 }) {
   const ui = useUi();
   const [name, setName] = useState('');
-  const [paths, setPaths] = useState<string[]>(['/etc/sys-manager', '/etc/nginx']);
-  const [dest, setDest] = useState('/var/backups/sys-manager');
+  const [paths, setPaths] = useState<string[]>(['/etc/shellfleet', '/etc/nginx']);
+  const [dest, setDest] = useState('/var/backups/shellfleet');
   const [cronExpr, setCronExpr] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [mode, setMode] = useState<'tar' | 'restic'>('tar');
@@ -246,7 +246,7 @@ function BackupForm({
   // path manually in the input rows.
   const COMMON_PATHS = [
     '/etc',
-    '/etc/sys-manager',
+    '/etc/shellfleet',
     '/etc/nginx',
     '/etc/letsencrypt',
     '/root',
@@ -332,7 +332,7 @@ function BackupForm({
               type="text"
               value={dest}
               onChange={(e) => setDest(e.target.value)}
-              placeholder="/var/backups/sys-manager  or  s3://bucket/prefix"
+              placeholder="/var/backups/shellfleet  or  s3://bucket/prefix"
               required
             />
           </div>
@@ -590,7 +590,7 @@ function RestoreModal({
   onClose: () => void;
 }) {
   const ui = useUi();
-  const [destRoot, setDestRoot] = useState('/tmp/sys-manager-restore');
+  const [destRoot, setDestRoot] = useState('/tmp/shellfleet-restore');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<BackupRestoreResponse | null>(null);
 

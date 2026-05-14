@@ -65,7 +65,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         // 403 / 429 / 5xx — fall through to retry.
         if (i === ATTEMPT_DELAYS_MS.length - 1) {
           console.error(
-            `[sys-manager] /api/me persistently returning ${res.status}. ` +
+            `[shellfleet] /api/me persistently returning ${res.status}. ` +
               `If this is your dashboard, check your browser's ad-blocker / ` +
               `privacy extension — many block paths matching /api/me/.`,
           );
@@ -77,7 +77,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         if (i === ATTEMPT_DELAYS_MS.length - 1) {
-          console.error('[sys-manager] /api/me unreachable:', err);
+          console.error('[shellfleet] /api/me unreachable:', err);
           setUser(null);
           setRole(null);
           setMfaEnabled(false);

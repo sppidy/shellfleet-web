@@ -309,7 +309,7 @@ function HomeBody() {
     if (t.id === 'backups' && !backupsEnabled) return false;
     if (t.id === 'docker' && !dockerAvailable) return false;
     // Kubernetes tab only shows for agents that explicitly advertise
-    // the "k8s" capability — i.e. the sys-manager-agent-k8s package.
+    // the "k8s" capability — i.e. the shellfleet-agent-k8s package.
     // Pre-v15 agents (caps null) still shouldn't see it; this is the
     // one tab where "show on absence" would be wrong.
     if (t.id === 'kubernetes' && !k8sAvailable) return false;
@@ -346,7 +346,7 @@ function HomeBody() {
         <div className="brand">
           <div className="brand-row">
             <div className="brand-name">
-              <span className="tilde">~/</span>sys-manager
+              <span className="tilde">~/</span>shellfleet
             </div>
             <span className={`pill ${isConnected ? 'live' : 'err'}`}>
               <span className={`dot ${isConnected ? 'pulse' : ''}`} />
@@ -596,7 +596,7 @@ function HomeBody() {
             <div className="scroll" style={{ display: 'flex', flexDirection: 'column' }}>
               {activeTab === 'dashboard' ? (
                 <HSplitter
-                  storageKey="sys-manager.agent-overview.split"
+                  storageKey="shellfleet.agent-overview.split"
                   defaultLeftPct={50}
                   minLeftPct={25}
                   maxLeftPct={80}

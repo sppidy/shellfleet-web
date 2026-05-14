@@ -98,7 +98,7 @@ export default function SwarmServiceDrawer({
                   fontSize: 12,
                 }}
               >
-                ⚠ Inspect not supported on this agent. Upgrade to the latest sys-manager-agent.
+                ⚠ Inspect not supported on this agent. Upgrade to the latest shellfleet-agent.
               </div>
             ) : (
               <div className="empty">

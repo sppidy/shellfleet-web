@@ -80,7 +80,7 @@ export default function MfaChallengePage() {
             className="brand-name"
             style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}
           >
-            <span className="tilde">~/</span>sys-manager
+            <span className="tilde">~/</span>shellfleet
           </div>
           <div className="muted" style={{ fontSize: 12, fontFamily: 'var(--mono)' }}>
             two-factor challenge {user ? `· ${user}` : ''}

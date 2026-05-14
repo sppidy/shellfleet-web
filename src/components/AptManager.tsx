@@ -96,7 +96,7 @@ export default function AptManager({ agentId }: { agentId: string }) {
         >
           ⚠ This agent doesn&apos;t expose apt updates yet. Upgrade with{' '}
           <code style={{ background: 'rgba(0,0,0,0.2)', padding: '0 4px' }}>
-            apt install --only-upgrade sys-manager-agent
+            apt install --only-upgrade shellfleet-agent
           </code>
           .
         </div>
