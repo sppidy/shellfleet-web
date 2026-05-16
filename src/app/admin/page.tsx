@@ -62,6 +62,16 @@ export default function AdminPage() {
 
   // Invite state
   const [invites, setInvites] = useState<{ code: string; role: string; created_by: string; expires_at: number; used_by: string | null }[]>([]);
+
+  // Tenancy state
+  const [orgs, setOrgs] = useState<{ id: number; name: string; slug: string }[]>([]);
+  const [newOrgName, setNewOrgName] = useState('');
+  const [newOrgSlug, setNewOrgSlug] = useState('');
+  const [selectedOrg, setSelectedOrg] = useState<{ id: number; name: string } | null>(null);
+  const [orgMembers, setOrgMembers] = useState<{ login: string; role_in_org: string }[]>([]);
+  const [orgAgents, setOrgAgents] = useState<string[]>([]);
+  const [addMemberLogin, setAddMemberLogin] = useState('');
+  const [addAgentId, setAddAgentId] = useState('');
   const [inviteRole, setInviteRole] = useState('viewer');
   const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
 
@@ -129,9 +139,63 @@ export default function AdminPage() {
     } catch { /* ignore */ }
   };
 
+  const fetchOrgs = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/ee/tenancy/orgs');
+      if (res.ok) setOrgs(await res.json());
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchOrgDetails = useCallback(async (orgId: number) => {
+    try {
+      const [mRes, aRes] = await Promise.all([
+        apiFetch(`/api/ee/tenancy/orgs/${orgId}/members`),
+        apiFetch(`/api/ee/tenancy/orgs/${orgId}/agents`),
+      ]);
+      if (mRes.ok) setOrgMembers(await mRes.json());
+      if (aRes.ok) setOrgAgents(await aRes.json());
+    } catch { /* ignore */ }
+  }, []);
+
+  const createOrg = async () => {
+    if (!newOrgName.trim() || !newOrgSlug.trim()) return;
+    try {
+      await apiFetch('/api/ee/tenancy/orgs', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: newOrgName.trim(), slug: newOrgSlug.trim() }),
+      });
+      setNewOrgName(''); setNewOrgSlug('');
+      await fetchOrgs();
+    } catch { /* ignore */ }
+  };
+
+  const addOrgMember = async () => {
+    if (!selectedOrg || !addMemberLogin.trim()) return;
+    await apiFetch(`/api/ee/tenancy/orgs/${selectedOrg.id}/members`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ login: addMemberLogin.trim() }),
+    });
+    setAddMemberLogin('');
+    fetchOrgDetails(selectedOrg.id);
+  };
+
+  const addOrgAgent = async () => {
+    if (!selectedOrg || !addAgentId.trim()) return;
+    await apiFetch(`/api/ee/tenancy/orgs/${selectedOrg.id}/agents`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ agent_id: addAgentId.trim() }),
+    });
+    setAddAgentId('');
+    fetchOrgDetails(selectedOrg.id);
+  };
+
   useEffect(() => {
-    if (status === 'authed') { fetchUsers(); fetchRoles(); fetchInvites(); }
-  }, [status, fetchUsers, fetchRoles, fetchInvites]);
+    if (status === 'authed') { fetchUsers(); fetchRoles(); fetchInvites(); fetchOrgs(); }
+  }, [status, fetchUsers, fetchRoles, fetchInvites, fetchOrgs]);
+
+  useEffect(() => {
+    if (selectedOrg) fetchOrgDetails(selectedOrg.id);
+  }, [selectedOrg, fetchOrgDetails]);
 
   useEffect(() => {
     if (selectedRole) fetchPermissions(selectedRole.id);
@@ -362,7 +426,7 @@ export default function AdminPage() {
             </div>}
 
             {/* EE ROLES + PERMISSIONS */}
-            {eeAvailable && (
+            {eeAvailable && (<>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
                 <div className="panel">
                   <div className="panel-head">
@@ -451,7 +515,61 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-            )}
+
+              {/* TENANCY */}
+              <div className="panel" style={{ marginTop: 12 }}>
+                <div className="panel-head">
+                  <div className="panel-title"><span className="ico">◈</span> ORGANIZATIONS <span className="meta">EE</span></div>
+                </div>
+                <div className="panel-body" style={{ padding: 12 }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    <input className="input" placeholder="Org name" value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} style={{ flex: 1 }} />
+                    <input className="input" placeholder="slug" value={newOrgSlug} onChange={(e) => setNewOrgSlug(e.target.value)} style={{ width: 100 }} />
+                    <button className="btn btn-accent" onClick={createOrg}>+</button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 12 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {orgs.length === 0 ? (
+                        <div className="mono muted" style={{ fontSize: 12 }}>No orgs yet.</div>
+                      ) : orgs.map((o) => (
+                        <div key={o.id} style={{ padding: '4px 8px', borderRadius: 4, cursor: 'pointer', background: selectedOrg?.id === o.id ? 'var(--bg-2)' : 'transparent' }} onClick={() => setSelectedOrg(o)}>
+                          <span className="mono" style={{ fontSize: 13, color: 'var(--fg)' }}>{o.name}</span>
+                          <span className="mono muted" style={{ fontSize: 11, marginLeft: 6 }}>{o.slug}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      {!selectedOrg ? (
+                        <div className="mono muted" style={{ fontSize: 12 }}>Select an org.</div>
+                      ) : (
+                        <>
+                          <div style={{ marginBottom: 10 }}>
+                            <div className="mono muted" style={{ fontSize: 11, marginBottom: 4 }}>MEMBERS</div>
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                              <input className="input" placeholder="username" value={addMemberLogin} onChange={(e) => setAddMemberLogin(e.target.value)} style={{ flex: 1 }} />
+                              <button className="btn btn-accent" onClick={addOrgMember}>add</button>
+                            </div>
+                            {orgMembers.map((m) => (
+                              <div key={m.login} className="mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{m.login} <span className="muted">({m.role_in_org})</span></div>
+                            ))}
+                          </div>
+                          <div>
+                            <div className="mono muted" style={{ fontSize: 11, marginBottom: 4 }}>AGENTS</div>
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                              <input className="input" placeholder="agent-id" value={addAgentId} onChange={(e) => setAddAgentId(e.target.value)} style={{ flex: 1 }} />
+                              <button className="btn btn-accent" onClick={addOrgAgent}>add</button>
+                            </div>
+                            {orgAgents.map((a) => (
+                              <div key={a} className="mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{a}</div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>)}
           </div>
         </div>
       </main>

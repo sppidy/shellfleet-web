@@ -38,6 +38,21 @@ export default function ActivityPage() {
     }
   }, []);
 
+  const exportAudit = async () => {
+    try {
+      const res = await fetch('/api/audit?limit=10000', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shellfleet-audit-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (status === 'guest') router.replace('/login');
   }, [status, router]);
@@ -148,6 +163,9 @@ export default function ActivityPage() {
                       cron
                     </button>
                   </div>
+                  <button className="btn" onClick={exportAudit} title="Download as JSON">
+                    ⤓ export
+                  </button>
                 </div>
               </div>
               <div className="panel-body flush">

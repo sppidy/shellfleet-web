@@ -22,6 +22,7 @@ import Backups from '@/components/Backups';
 import AgentLabels from '@/components/AgentLabels';
 import CommandPalette from '@/components/CommandPalette';
 import AiAnalysis from '@/components/AiAnalysis';
+import LicenseBanner from '@/components/LicenseBanner';
 import { Loader2Icon, MenuIcon, XIcon } from 'lucide-react';
 
 type Tab =
@@ -350,6 +351,7 @@ function HomeBody() {
 
   return (
     <div className="app-shell">
+      <LicenseBanner />
       {sidebarOpen && (
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
       )}
