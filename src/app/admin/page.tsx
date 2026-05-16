@@ -72,6 +72,7 @@ export default function AdminPage() {
   const [orgAgents, setOrgAgents] = useState<string[]>([]);
   const [addMemberLogin, setAddMemberLogin] = useState('');
   const [addAgentId, setAddAgentId] = useState('');
+  const [allAgents, setAllAgents] = useState<string[]>([]);
   const [inviteRole, setInviteRole] = useState('viewer');
   const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
 
@@ -143,6 +144,13 @@ export default function AdminPage() {
     try {
       const res = await apiFetch('/api/ee/tenancy/orgs');
       if (res.ok) setOrgs(await res.json());
+    } catch { /* ignore */ }
+    try {
+      const tRes = await apiFetch('/api/tokens');
+      if (tRes.ok) {
+        const tokens: { hostname?: string }[] = await tRes.json();
+        setAllAgents(tokens.filter(t => t.hostname).map(t => `${t.hostname}-id`));
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -546,8 +554,13 @@ export default function AdminPage() {
                           <div style={{ marginBottom: 10 }}>
                             <div className="mono muted" style={{ fontSize: 11, marginBottom: 4 }}>MEMBERS</div>
                             <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                              <input className="input" placeholder="username" value={addMemberLogin} onChange={(e) => setAddMemberLogin(e.target.value)} style={{ flex: 1 }} />
-                              <button className="btn btn-accent" onClick={addOrgMember}>add</button>
+                              <select className="input" value={addMemberLogin} onChange={(e) => setAddMemberLogin(e.target.value)} style={{ flex: 1 }}>
+                                <option value="">— select user —</option>
+                                {data?.users.filter(u => !orgMembers.some(m => m.login === u.login)).map(u => (
+                                  <option key={u.login} value={u.login}>{u.login}</option>
+                                ))}
+                              </select>
+                              <button className="btn btn-accent" onClick={addOrgMember} disabled={!addMemberLogin}>add</button>
                             </div>
                             {orgMembers.map((m) => (
                               <div key={m.login} className="mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{m.login} <span className="muted">({m.role_in_org})</span></div>
@@ -556,11 +569,18 @@ export default function AdminPage() {
                           <div>
                             <div className="mono muted" style={{ fontSize: 11, marginBottom: 4 }}>AGENTS</div>
                             <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                              <input className="input" placeholder="agent-id" value={addAgentId} onChange={(e) => setAddAgentId(e.target.value)} style={{ flex: 1 }} />
-                              <button className="btn btn-accent" onClick={addOrgAgent}>add</button>
+                              <select className="input" value={addAgentId} onChange={(e) => setAddAgentId(e.target.value)} style={{ flex: 1 }}>
+                                <option value="">— select agent —</option>
+                                {allAgents.filter(a => !orgAgents.includes(a)).map(a => (
+                                  <option key={a} value={a}>{a.replace(/-id$/, '')}</option>
+                                ))}
+                              </select>
+                              <button className="btn btn-accent" onClick={addOrgAgent} disabled={!addAgentId}>add</button>
                             </div>
                             {orgAgents.map((a) => (
-                              <div key={a} className="mono" style={{ fontSize: 12, color: 'var(--fg-1)' }}>{a}</div>
+                              <div key={a} className="mono" style={{ fontSize: 12, color: 'var(--fg-1)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {a.replace(/-id$/, '')}
+                              </div>
                             ))}
                           </div>
                         </>
