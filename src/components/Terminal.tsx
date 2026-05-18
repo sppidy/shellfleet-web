@@ -47,7 +47,7 @@ export default function Terminal({
   // sentinel (agent routes on that); host shells get a UUID per
   // mount, either supplied by the parent or generated here.
   const sessionIdRef = useRef<string>(
-    containerId ? '' : (sessionId ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `t-${Math.random().toString(36).slice(2)}-${Date.now()}`))
+    containerId ? '' : (sessionId ?? crypto.randomUUID())
   );
 
   const [isFullscreen, setIsFullscreen] = useState(false);

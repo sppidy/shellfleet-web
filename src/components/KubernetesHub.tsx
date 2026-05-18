@@ -413,10 +413,7 @@ const rowStyle: React.CSSProperties = { borderTop: '1px solid var(--line)' };
 const MAX_LOG_LINES = 5000;
 
 function newStreamId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `s-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+  return crypto.randomUUID();
 }
 
 function LogsModal({

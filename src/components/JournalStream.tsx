@@ -30,9 +30,7 @@ interface EndMessage {
 type AnyMsg = ChunkMessage | EndMessage | { type: string };
 
 function newStreamId(): string {
-  // Random enough to avoid collisions across operator tabs without
-  // pulling in a uuid lib.
-  return `js-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return crypto.randomUUID();
 }
 
 export default function JournalStream({ agentId }: { agentId: string }) {

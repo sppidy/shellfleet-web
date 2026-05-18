@@ -64,10 +64,7 @@ export default function TerminalPage() {
     setTabs((prev) => {
       // Each tab gets its own UUID — agent keys host PTYs by it, so
       // multiple tabs against the same host run independent shells.
-      const id =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : `t-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+      const id = crypto.randomUUID();
       const next: Tab = { id, agentId };
       setActiveId(next.id);
       return [...prev, next];
