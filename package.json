@@ -20,7 +20,7 @@
     "react-dom": "19.2.6"
   },
   "overrides": {
-    "dompurify": "^3.4.3",
+    "dompurify": "^3.4.10",
     "postcss": "^8.5.10"
   },
   "devDependencies": {
