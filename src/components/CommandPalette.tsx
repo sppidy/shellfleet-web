@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWebSocket } from '@/components/providers/WebSocketProvider';
+import { useSession } from '@/components/providers/SessionProvider';
 
 type Item = {
   ico: string;
@@ -18,6 +19,7 @@ export default function CommandPalette({
 }) {
   const router = useRouter();
   const { agents } = useWebSocket();
+  const { role } = useSession();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [idx, setIdx] = useState(0);
@@ -32,7 +34,11 @@ export default function CommandPalette({
       { ico: '⚿', label: 'Manage tokens', meta: 'go', action: () => router.push('/tokens') },
       { ico: '＋', label: 'Connect new agent', meta: 'go', action: () => router.push('/device') },
       { ico: '⌘', label: 'Account & 2FA', meta: 'go', action: () => router.push('/security') },
-      { ico: '⌬', label: 'Admin · users & seats', meta: 'go', action: () => router.push('/admin') },
+      // Admin entry only for admins — viewers landing on /admin just hit the
+      // 'access required' page (the sidebar already role-gates this link).
+      ...(role === 'admin'
+        ? [{ ico: '⌬', label: 'Admin · users & seats', meta: 'go', action: () => router.push('/admin') }]
+        : []),
       { ico: '›_', label: 'Terminal · multi-host', meta: 'go', action: () => router.push('/terminal') },
     ];
     const agentItems: Item[] = agents.map((a) => ({
@@ -42,7 +48,7 @@ export default function CommandPalette({
       action: () => onSelectAgent(a),
     }));
     return [...base, ...agentItems];
-  }, [router, agents, onSelectAgent]);
+  }, [router, agents, onSelectAgent, role]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

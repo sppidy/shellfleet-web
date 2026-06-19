@@ -194,13 +194,6 @@ export default function FleetOverview({
     });
   }, [agents, snapshots, filter]);
 
-  const sparks = useMemo(
-    () => Array.from({ length: 24 }, (_, i) => 30 + Math.round(Math.sin(i / 3) * 20 + Math.random() * 15)),
-    // run-once on first render; stays stable to avoid jitter
-     
-    [],
-  );
-
   return (
     <div className="pane">
       <div className="stat-grid">
@@ -212,11 +205,6 @@ export default function FleetOverview({
           <div className="stat-value">
             {totals.load1.toFixed(2)}
             <span className="unit"> / {totals.cpu}</span>
-          </div>
-          <div className="sparkbars">
-            {sparks.map((v, i) => (
-              <i key={i} style={{ height: `${v}%` }} />
-            ))}
           </div>
           <div className="stat-sub">
             <span>{totals.agentsWithStats} reporting</span>

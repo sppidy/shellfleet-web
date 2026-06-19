@@ -63,7 +63,9 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
       if (e.key === 'Escape') {
         pendingConfirm.resolve(false);
         setPendingConfirm(null);
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && !pendingConfirm.opts.destructive) {
+        // Destructive confirms require an explicit click — a stray Enter
+        // (a common reflex) must not force-remove a container/service/backup.
         pendingConfirm.resolve(true);
         setPendingConfirm(null);
       }
