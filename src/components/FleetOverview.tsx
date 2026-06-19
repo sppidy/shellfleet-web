@@ -197,7 +197,7 @@ export default function FleetOverview({
   const sparks = useMemo(
     () => Array.from({ length: 24 }, (_, i) => 30 + Math.round(Math.sin(i / 3) * 20 + Math.random() * 15)),
     // run-once on first render; stays stable to avoid jitter
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [],
   );
 

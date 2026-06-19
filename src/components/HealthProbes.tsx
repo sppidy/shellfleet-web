@@ -180,7 +180,7 @@ function ProbeForm({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = false;
     const load = async () => {
       try {
         const res = await apiFetch('/api/probe-library');

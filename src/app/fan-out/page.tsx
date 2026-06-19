@@ -36,7 +36,7 @@ export default function FanOutPage() {
   const [run, setRun] = useState<FanOutRunDetail | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = false;
     const load = async () => {
       try {
         const res = await apiFetch('/api/agent-labels');

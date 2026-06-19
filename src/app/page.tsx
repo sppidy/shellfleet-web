@@ -2,6 +2,12 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import {
+  dockerAvailable as capDockerAvailable,
+  swarmAvailable as capSwarmAvailable,
+  k8sAvailable as capK8sAvailable,
+  systemdAvailable as capSystemdAvailable,
+} from '@/lib/capabilities';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/components/providers/WebSocketProvider';
 import { useSession } from '@/components/providers/SessionProvider';
@@ -136,21 +142,21 @@ function HomeBody() {
   // the matching tab. Derived early so the redirect useEffects below
   // can reference it.
   const caps = (selectedAgent && agentCapabilities[selectedAgent]) || null;
-  const dockerAvailable = caps === null || caps.includes('docker') || caps.includes('swarm');
-  const swarmAvailable = caps === null || caps.includes('swarm');
-  const k8sAvailable = caps !== null && caps.includes('k8s');
+  const dockerAvailable = capDockerAvailable(caps);
+  const swarmAvailable = capSwarmAvailable(caps);
+  const k8sAvailable = capK8sAvailable(caps);
   // systemd gates the apt-update, journalctl, and service-list surfaces.
   // Pre-v15 agents (caps null) keep showing them — only k8s-only Pod
   // agents that explicitly advertise without "systemd" hide the
   // matching UI.
-  const systemdAvailable = caps === null || caps.includes('systemd');
+  const systemdAvailable = capSystemdAvailable(caps);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [backupsEnabled, setBackupsEnabled] = useState(false);
   const [eeActive, setEeActive] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = false;
     const load = async () => {
       try {
         const res = await apiFetch('/api/features');

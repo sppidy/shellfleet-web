@@ -927,7 +927,7 @@ function ApplyView({ agentId }: { agentId: string }) {
     } catch {
       /* ignore — sessionStorage / localStorage may be disabled */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [draftKey]);
   useEffect(() => {
     try {
