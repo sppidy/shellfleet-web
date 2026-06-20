@@ -22,7 +22,7 @@ export default function IpAllowlistPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await apiFetch('/api/ee/ip-allowlist/');
+      const res = await apiFetch('/api/ee/ip-allowlist');
       if (!res.ok) { setError(`HTTP ${res.status}`); setEntries([]); return; }
       setEntries(await res.json());
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setEntries([]); }
@@ -34,7 +34,7 @@ export default function IpAllowlistPage() {
     if (!cidr.trim()) return;
     setError(null);
     try {
-      const res = await apiFetch('/api/ee/ip-allowlist/', {
+      const res = await apiFetch('/api/ee/ip-allowlist', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ cidr: cidr.trim(), name: name.trim() || null }),
       });
