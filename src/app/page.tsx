@@ -489,6 +489,8 @@ function HomeBody() {
               {[
                 { path: '/recordings', label: 'Recordings', feat: 'recordings', icon: '⏺' },
                 { path: '/runbooks', label: 'Runbooks', feat: 'runbooks', icon: '▦' },
+                { path: '/approvals', label: 'Approvals', feat: 'approvals', icon: '⏳' },
+                { path: '/break-glass', label: 'Break-glass', feat: 'break-glass', icon: '⚡' },
                 { path: '/drift', label: 'Drift', feat: 'drift', icon: '◷' },
                 { path: '/cost', label: 'Cost', feat: 'cost', icon: '⊞' },
                 { path: '/sla', label: 'SLA & uptime', feat: 'sla', icon: '▲' },
