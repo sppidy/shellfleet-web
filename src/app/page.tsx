@@ -487,6 +487,9 @@ function HomeBody() {
             <div className="nav-section">ENTERPRISE</div>
             <div className="nav-list">
               {[
+                { path: '/recordings', label: 'Recordings', feat: 'recordings', icon: '⏺' },
+                { path: '/runbooks', label: 'Runbooks', feat: 'runbooks', icon: '▦' },
+                { path: '/drift', label: 'Drift', feat: 'drift', icon: '◷' },
                 { path: '/cost', label: 'Cost', feat: 'cost', icon: '⊞' },
                 { path: '/sla', label: 'SLA & uptime', feat: 'sla', icon: '▲' },
                 { path: '/ip-allowlist', label: 'IP allow-list', feat: 'ip-allowlist', icon: '⊟' },
