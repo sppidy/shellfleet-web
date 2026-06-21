@@ -149,7 +149,7 @@ export default function PolicyPage() {
               {/* Editor */}
               <div className="panel">
                 <div className="panel-head">
-                  <div className="panel-title"><span className="ico">⚡</span> ACL POLICY</div>
+                  <div className="panel-title"><span className="ico">⊗</span> ACL POLICY</div>
                 </div>
                 <div className="panel-body" style={{ padding: 0 }}>
                   <textarea

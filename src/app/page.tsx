@@ -447,7 +447,7 @@ function HomeBody() {
             <button type="button" className={`nav-item ${hasFeature(eeFeatures, 'webauthn') ? '' : 'nav-locked'}`} onClick={() => router.push('/passkeys')} title={hasFeature(eeFeatures, 'webauthn') ? '' : 'Not included in your EE license'}>
               <span className="ico">⚷</span>
               <span>Passkeys</span>
-              {!hasFeature(eeFeatures, 'webauthn') && <span className="nav-badge" style={{ background: 'transparent' }}>🔒</span>}
+              {!hasFeature(eeFeatures, 'webauthn') && <span className="nav-badge" style={{ background: 'transparent' }}>⊘</span>}
             </button>
           )}
           <button type="button" className="nav-item" onClick={() => router.push('/security')}>
@@ -494,10 +494,10 @@ function HomeBody() {
             <div className="nav-section">ENTERPRISE</div>
             <div className="nav-list">
               {[
-                { path: '/recordings', label: 'Recordings', feat: 'recordings', icon: '⏺' },
+                { path: '/recordings', label: 'Recordings', feat: 'recordings', icon: '◉' },
                 { path: '/runbooks', label: 'Runbooks', feat: 'runbooks', icon: '▦' },
-                { path: '/approvals', label: 'Approvals', feat: 'approvals', icon: '⏳' },
-                { path: '/break-glass', label: 'Break-glass', feat: 'break-glass', icon: '⚡' },
+                { path: '/approvals', label: 'Approvals', feat: 'approvals', icon: '◷' },
+                { path: '/break-glass', label: 'Break-glass', feat: 'break-glass', icon: '⊗' },
                 { path: '/drift', label: 'Drift', feat: 'drift', icon: '◷' },
                 { path: '/cost', label: 'Cost', feat: 'cost', icon: '⊞' },
                 { path: '/sla', label: 'SLA & uptime', feat: 'sla', icon: '▲' },
@@ -517,7 +517,7 @@ function HomeBody() {
                   >
                     <span className="ico">{n.icon}</span>
                     <span>{n.label}</span>
-                    {locked && <span className="nav-badge" style={{ background: 'transparent' }}>🔒</span>}
+                    {locked && <span className="nav-badge" style={{ background: 'transparent' }}>⊘</span>}
                   </button>
                 );
               })}
@@ -671,7 +671,7 @@ function HomeBody() {
                     title={t.locked ? 'Not included in your EE license' : undefined}
                   >
                     <span className="num">{String(i + 1).padStart(2, '0')}</span>
-                    <span>{t.label}{t.locked ? ' 🔒' : ''}</span>
+                    <span>{t.label}{t.locked ? ' ⊘' : ''}</span>
                   </button>
                 ))}
               </div>

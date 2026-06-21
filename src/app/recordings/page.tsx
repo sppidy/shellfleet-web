@@ -82,7 +82,7 @@ export default function RecordingsPage() {
             <div className="pane">
               {error && <div className="panel" style={{ borderColor: 'var(--err-bd)', marginBottom: 12 }}><div className="panel-body" style={{ color: 'var(--err)' }}>{error}</div></div>}
               <div className="panel" style={{ marginBottom: 12 }}>
-                <div className="panel-head"><div className="panel-title"><span className="ico">⏺</span> RECORDINGS</div></div>
+                <div className="panel-head"><div className="panel-title"><span className="ico">◉</span> RECORDINGS</div></div>
                 <div className="panel-body flush">
                   {list === null ? <div className="empty"><Loader2Icon className="w-5 h-5 animate-spin" /></div>
                     : list.length === 0 ? <div className="empty">No recordings yet.</div> : (

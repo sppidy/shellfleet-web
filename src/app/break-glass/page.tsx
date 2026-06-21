@@ -109,7 +109,7 @@ export default function BreakGlassPage() {
               {msg && <div className="panel" style={{ borderColor: 'var(--accent-bd)', marginBottom: 12 }}><div className="panel-body" style={{ color: 'var(--accent)' }}>{msg}</div></div>}
 
               <div className="panel" style={{ marginBottom: 12 }}>
-                <div className="panel-head"><div className="panel-title"><span className="ico">⚡</span> REQUEST EMERGENCY ACCESS</div></div>
+                <div className="panel-head"><div className="panel-title"><span className="ico">⊗</span> REQUEST EMERGENCY ACCESS</div></div>
                 <div className="panel-body" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {scopes.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -137,7 +137,7 @@ export default function BreakGlassPage() {
               </div>
 
               <div className="panel" style={{ marginBottom: 12 }}>
-                <div className="panel-head"><div className="panel-title"><span className="ico">⏳</span> PENDING</div></div>
+                <div className="panel-head"><div className="panel-title"><span className="ico">◷</span> PENDING</div></div>
                 <div className="panel-body flush">
                   {pending === null ? <div className="empty"><Loader2Icon className="w-5 h-5 animate-spin" /></div>
                     : pending.length === 0 ? <div className="empty">No pending requests.</div> : (

@@ -74,7 +74,7 @@ export default function ScimPage() {
                 </div>
 
                 <div className="panel">
-                  <div className="panel-head"><div className="panel-title"><span className="ico">ℹ</span> SETUP</div></div>
+                  <div className="panel-head"><div className="panel-title"><span className="ico">▸</span> SETUP</div></div>
                   <div className="panel-body">
                     <ol className="mono muted" style={{ fontSize: 12, paddingLeft: 18, lineHeight: 1.9 }}>
                       <li>Set <span style={{ color: 'var(--fg-2)' }}>EE_SCIM_TOKEN</span> on the EE sidecar to a long random secret.</li>

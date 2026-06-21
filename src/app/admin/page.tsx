@@ -333,7 +333,7 @@ export default function AdminPage() {
               <div className="panel" style={{ marginTop: 12 }}>
                 <div className="panel-head">
                   <div className="panel-title">
-                    <span className="ico">📡</span> USAGE TELEMETRY
+                    <span className="ico">⇡</span> USAGE TELEMETRY
                     <span className="meta" style={{ color: telemetry.enabled ? 'var(--accent)' : 'var(--fg-2)' }}>
                       {telemetry.enabled ? 'reporting' : 'off'}
                     </span>
@@ -483,7 +483,7 @@ export default function AdminPage() {
               <div className="panel" style={{ marginTop: 12, borderColor: 'var(--warn-bd)' }}>
                 <div className="panel-head">
                   <div className="panel-title">
-                    <span className="ico">🔒</span> ORGANIZATIONS
+                    <span className="ico">⊘</span> ORGANIZATIONS
                     <span className="meta" style={{ color: 'var(--warn)' }}>not in your license</span>
                   </div>
                 </div>

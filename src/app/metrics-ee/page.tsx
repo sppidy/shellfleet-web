@@ -94,7 +94,7 @@ export default function MetricsEePage() {
               {error && <div className="panel" style={{ borderColor: 'var(--err-bd)', marginBottom: 12 }}><div className="panel-body" style={{ color: 'var(--err)' }}>{error}</div></div>}
               {panels && !panels.enabled ? (
                 <div className="panel" style={{ borderColor: 'var(--warn-bd)' }}>
-                  <div className="panel-head"><div className="panel-title"><span className="ico">⚙</span> NOT CONFIGURED</div></div>
+                  <div className="panel-head"><div className="panel-title"><span className="ico">○</span> NOT CONFIGURED</div></div>
                   <div className="panel-body"><div className="mono muted" style={{ fontSize: 12 }}>
                     Multi-source metrics are licensed but no panels are defined. Point <span style={{ color: 'var(--fg-2)' }}>EE_METRICS_CONFIG_PATH</span> at a panel config (Prometheus / Datadog / New Relic sources) on the EE sidecar and refresh.
                   </div></div>

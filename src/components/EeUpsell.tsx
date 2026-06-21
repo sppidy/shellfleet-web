@@ -11,7 +11,7 @@ export default function EeUpsell({ feature, label }: { feature: string; label: s
       <div className="panel" style={{ borderColor: 'var(--warn-bd)' }}>
         <div className="panel-head">
           <div className="panel-title">
-            <span className="ico">🔒</span> {label}
+            <span className="ico">⊘</span> {label}
             <span className="meta" style={{ color: 'var(--warn)' }}>not in your license</span>
           </div>
         </div>
