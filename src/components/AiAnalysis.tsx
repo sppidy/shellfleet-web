@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useWebSocket } from './providers/WebSocketProvider';
 import { Loader2Icon } from 'lucide-react';
+import Markdown from './Markdown';
 
 interface Props {
   agentId: string;
@@ -20,6 +21,7 @@ export default function AiAnalysis({ agentId }: Props) {
   const [container, setContainer] = useState('');
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
+  const [respNote, setRespNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +116,7 @@ export default function AiAnalysis({ agentId }: Props) {
     setLoading(true);
     setError(null);
     setResponse('');
+    setRespNote('');
 
     setStage(source === 'audit' ? 'reading audit trail…' : 'gathering logs from agent…');
     let logs = '';
@@ -139,11 +142,12 @@ export default function AiAnalysis({ agentId }: Props) {
       }
 
       const data = await res.json();
-      const note =
+      setResponse(data.content || 'No response.');
+      setRespNote(
         lineCount > 0
-          ? `\n\n— analyzed ${lineCount} ${source.replace('_', ' ')} lines`
-          : `\n\n— no ${source.replace('_', ' ')} lines were available; answer is from the question alone`;
-      setResponse((data.content || 'No response.') + note);
+          ? `analyzed ${lineCount} ${source.replace('_', ' ')} lines`
+          : `no ${source.replace('_', ' ')} lines were available; answer is from the question alone`,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'failed');
     } finally {
@@ -228,16 +232,19 @@ export default function AiAnalysis({ agentId }: Props) {
                 style={{
                   padding: 16,
                   background: 'var(--bg-2)',
-                  border: '1px solid var(--bd)',
+                  border: '1px solid var(--line)',
                   borderRadius: 'var(--r)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                  color: 'var(--fg)',
                 }}
               >
-                {response}
+                <Markdown text={response} />
+                {respNote && (
+                  <div
+                    className="mono muted"
+                    style={{ fontSize: 11, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}
+                  >
+                    — {respNote}
+                  </div>
+                )}
               </div>
             )}
 
