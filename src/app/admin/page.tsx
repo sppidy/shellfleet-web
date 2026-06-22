@@ -177,6 +177,15 @@ export default function AdminPage() {
     } catch { /* ignore */ }
   };
 
+  const deleteOrg = async (org: { id: number; name: string }) => {
+    if (!confirm(`Delete organization "${org.name}"? Its member and agent assignments are removed. This cannot be undone.`)) return;
+    try {
+      await apiFetch(`/api/ee/tenancy/orgs/${org.id}`, { method: 'DELETE' });
+      if (selectedOrg?.id === org.id) setSelectedOrg(null);
+      await fetchOrgs();
+    } catch { /* ignore */ }
+  };
+
   const addOrgMember = async () => {
     if (!selectedOrg || !addMemberLogin.trim()) return;
     await apiFetch(`/api/ee/tenancy/orgs/${selectedOrg.id}/members`, {
@@ -430,9 +439,11 @@ export default function AdminPage() {
                       {orgs.length === 0 ? (
                         <div className="mono muted" style={{ fontSize: 12 }}>No orgs yet.</div>
                       ) : orgs.map((o) => (
-                        <div key={o.id} style={{ padding: '4px 8px', borderRadius: 4, cursor: 'pointer', background: selectedOrg?.id === o.id ? 'var(--bg-2)' : 'transparent' }} onClick={() => setSelectedOrg(o)}>
-                          <span className="mono" style={{ fontSize: 13, color: 'var(--fg)' }}>{o.name}</span>
-                          <span className="mono muted" style={{ fontSize: 11, marginLeft: 6 }}>{o.slug}</span>
+                        <div key={o.id} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderRadius: 4, cursor: 'pointer', background: selectedOrg?.id === o.id ? 'var(--bg-2)' : 'transparent' }} onClick={() => setSelectedOrg(o)}>
+                          <span className="mono" style={{ fontSize: 13, color: 'var(--fg)', flex: 1 }}>{o.name}
+                            <span className="mono muted" style={{ fontSize: 11, marginLeft: 6 }}>{o.slug}</span>
+                          </span>
+                          <button className="btn btn-sm" title="Delete org" style={{ color: 'var(--err)', padding: '2px 6px' }} onClick={(e) => { e.stopPropagation(); deleteOrg(o); }}>✕</button>
                         </div>
                       ))}
                     </div>
