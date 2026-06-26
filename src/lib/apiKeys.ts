@@ -1,6 +1,25 @@
 // Pure helpers for the API-keys UI — node-testable, no React (arm64 vitest OOM
 // guard). `now` params default to wall-clock but are injectable for tests.
 
+import { apiFetch } from './api';
+
+export interface PolicySummary {
+  id: number;
+  name: string;
+  description: string | null;
+  resource_bound: boolean;
+}
+
+/** Fetch bindable IAM policies from EE. Empty array on failure. */
+export async function fetchPolicies(): Promise<PolicySummary[]> {
+  try {
+    const res = await apiFetch('/api/ee/iam/policies');
+    if (!res.ok) return [];
+    const all = await res.json() as PolicySummary[];
+    return all.filter((p) => !p.resource_bound);
+  } catch { return []; }
+}
+
 export interface ApiKeyInfo {
   id: number;
   prefix: string;

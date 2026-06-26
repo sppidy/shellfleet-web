@@ -8,7 +8,7 @@ import { useEeFeatures } from '@/lib/useEeFeatures';
 import { hasFeature } from '@/lib/eeFeatures';
 import EeFeatureGate from '@/components/EeFeatureGate';
 import ApiKeyCreateForm from '@/components/ApiKeyCreateForm';
-import { formatRelative, formatExpiry, type ApiKeyInfo, type ApiKeyCreated } from '@/lib/apiKeys';
+import { formatRelative, formatExpiry, fetchPolicies, type PolicySummary, type ApiKeyInfo, type ApiKeyCreated } from '@/lib/apiKeys';
 import { Loader2Icon } from 'lucide-react';
 
 export default function ApiKeysPage() {
@@ -23,7 +23,9 @@ export default function ApiKeysPage() {
   const [reveal, setReveal] = useState<ApiKeyCreated | null>(null);
   const [viewLogin, setViewLogin] = useState(''); // admin user-switcher
   const [scope, setScope] = useState('');         // active scope label
+  const [policyMap, setPolicyMap] = useState<Map<number, string>>(new Map()); // policy_id → name
 
+  useEffect(() => { fetchPolicies().then((ps) => setPolicyMap(new Map(ps.map((p) => [p.id, p.name])))); }, []);
   useEffect(() => { if (status === 'guest') router.replace('/login'); }, [status, router]);
 
   const load = useCallback(async (login?: string) => {
@@ -76,8 +78,8 @@ export default function ApiKeysPage() {
         <div className="scroll">
           <div className="pane">
             <div className="mono muted" style={{ fontSize: 11, marginBottom: 10 }}>
-              Keys authenticate <span style={{ color: 'var(--fg-2)' }}>/api/v1</span> with your account role
-              (per-key policy scoping is not yet enforced).
+              Keys authenticate <span style={{ color: 'var(--fg-2)' }}>/api/v1</span> with your account role.
+              Keys bound to a policy are limited to that policy&rsquo;s allowed actions.
               {scope && <> · viewing <span style={{ color: 'var(--fg-2)' }}>{scope}</span></>}
             </div>
 
@@ -117,7 +119,7 @@ export default function ApiKeysPage() {
                   <table className="tbl">
                     <thead>
                       <tr>
-                        <th>NAME</th><th>PREFIX</th><th>CREATED</th><th>LAST USED</th><th>EXPIRES</th><th />
+                        <th>NAME</th><th>PREFIX</th><th>POLICY</th><th>CREATED</th><th>LAST USED</th><th>EXPIRES</th><th />
                       </tr>
                     </thead>
                     <tbody>
@@ -125,6 +127,7 @@ export default function ApiKeysPage() {
                         <tr key={k.id}>
                           <td className="mono" style={{ color: 'var(--fg)' }}>{k.name}</td>
                           <td className="mono muted">sf_live_&hellip;{k.prefix}</td>
+                          <td className="mono muted">{k.policy_id ? (policyMap.get(k.policy_id) ?? `policy #${k.policy_id}`) : '—'}</td>
                           <td className="mono">{formatRelative(k.created_at)}</td>
                           <td className="mono muted">{k.last_used_at ? formatRelative(k.last_used_at) : 'never'}</td>
                           <td className="mono muted">{formatExpiry(k.expires_at)}</td>
