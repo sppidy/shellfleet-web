@@ -509,6 +509,7 @@ function HomeBody() {
                 { path: '/cost', label: 'Cost', feat: 'cost', icon: '⊞' },
                 { path: '/sla', label: 'SLA & uptime', feat: 'sla', icon: '▲' },
                 { path: '/ip-allowlist', label: 'IP allow-list', feat: 'ip-allowlist', icon: '⊟' },
+                { path: '/iam', label: 'IAM Policies', feat: 'acl', icon: '⊡' },
                 { path: '/audit', label: 'Audit log', feat: 'audit-long', icon: '≣' },
                 { path: '/metrics-ee', label: 'EE metrics', feat: 'metrics-multi', icon: '▤' },
                 { path: '/scim', label: 'SCIM', feat: 'scim', icon: '⇄' },
