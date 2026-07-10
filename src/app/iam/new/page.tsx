@@ -62,7 +62,7 @@ export default function IamNewPage() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') loadActions(); }, [status, loadActions]);
+  useEffect(() => { if (status === 'authed' && role === 'admin') loadActions(); }, [status, role, loadActions]);
 
   const updateStatement = (key: number, fn: (s: StatementForm) => StatementForm) => {
     setStatements((prev) => prev.map((s) => s.key === key ? fn(s) : s));

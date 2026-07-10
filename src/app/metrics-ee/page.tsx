@@ -109,7 +109,7 @@ export default function MetricsEePage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setPanels({ enabled: false, panels: [], sources: [] }); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   // Page-level shared tick: one interval drives every card. Pauses on a hidden
   // tab (and refreshes immediately when it becomes visible again).

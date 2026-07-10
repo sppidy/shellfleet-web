@@ -28,7 +28,7 @@ export default function IpAllowlistPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setEntries([]); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const add = async () => {
     if (!cidr.trim()) return;

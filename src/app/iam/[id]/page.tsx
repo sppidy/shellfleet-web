@@ -28,7 +28,7 @@ export default function IamDetailPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); }
   }, [id]);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+  useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const doDelete = async () => {
     if (!confirm('Delete this policy? This cannot be undone.')) return;

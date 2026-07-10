@@ -76,7 +76,7 @@ export default function IamEditPage() {
     } finally { setLoading(false); }
   }, [id]);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+  useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const updateStatement = (key: number, fn: (s: StatementForm) => StatementForm) => {
     setStatements((prev) => prev.map((s) => s.key === key ? fn(s) : s));

@@ -42,7 +42,7 @@ export default function CostPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const money = (n: number) => `${data?.currency ?? ''} ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 

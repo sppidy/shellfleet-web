@@ -25,7 +25,7 @@ export default function IamPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setPolicies([]); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   if (status !== 'authed') return <div className="center-screen"><Loader2Icon className="w-6 h-6 animate-spin" style={{ color: 'var(--fg-2)' }} /></div>;
   if (role !== 'admin') return <div className="center-screen" style={{ flexDirection: 'column', gap: 12 }}><div className="mono" style={{ color: 'var(--err)' }}>/iam requires the admin role.</div><button className="btn" onClick={() => router.push('/')}>← back</button></div>;

@@ -43,7 +43,7 @@ export default function ApprovalsPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setPending([]); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const decide = async (id: number, kind: 'approve' | 'deny') => {
     setMsg(null); setError(null);

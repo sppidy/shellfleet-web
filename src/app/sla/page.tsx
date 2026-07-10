@@ -37,7 +37,7 @@ export default function SlaPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setSummary([]); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const pctColor = (p: number) => (p >= 99.9 ? 'var(--accent)' : p >= 99 ? 'var(--fg)' : p >= 95 ? 'var(--warn)' : 'var(--err)');
 

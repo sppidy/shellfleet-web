@@ -50,7 +50,7 @@ export default function RecordingsPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'failed'); setList([]); }
   }, []);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const view = async (rec: Recording) => {
     setLoadingCast(true); setViewing(null);

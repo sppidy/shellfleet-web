@@ -67,7 +67,7 @@ export default function DriftPage() {
     loadCompare(category);
   }, [category, loadCompare]);
 
-  useEffect(() => { if (status === 'authed') load(); }, [status, load]);
+    useEffect(() => { if (status === 'authed' && role === 'admin') load(); }, [status, role, load]);
 
   const triggerSnapshot = async (agentId: string) => {
     if (!agentId) { setError('pick an agent to snapshot'); return; }

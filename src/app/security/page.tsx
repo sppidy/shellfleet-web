@@ -75,6 +75,7 @@ export default function SecurityPage() {
         throw new Error(t || 'invalid code');
       }
       setStage('enrolled');
+      setStart(null);
       setCode('');
       refresh();
     } catch (e) {
