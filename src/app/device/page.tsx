@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2Icon } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useCanWrite } from '@/components/providers/SessionProvider';
@@ -10,7 +10,22 @@ type AuthStatus = 'checking' | 'authed' | 'guest';
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export default function DeviceAuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="center-screen">
+          <Loader2Icon className="w-6 h-6 animate-spin" style={{ color: 'var(--fg-2)' }} />
+        </div>
+      }
+    >
+      <DeviceAuthPageContent />
+    </Suspense>
+  );
+}
+
+function DeviceAuthPageContent() {
   const router = useRouter();
+  const cliAuth = useSearchParams().get('cli') === '1';
   const canWrite = useCanWrite();
   const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
   const [userCode, setUserCode] = useState('');
@@ -53,7 +68,11 @@ export default function DeviceAuthPage() {
 
       if (res.ok) {
         setSubmitStatus('success');
-        setMessage('Agent approved. It should connect within a few seconds.');
+        setMessage(
+          cliAuth
+            ? 'CLI authorized. Return to the terminal to continue.'
+            : 'Agent approved. It should connect within a few seconds.',
+        );
         setUserCode('');
       } else if (res.status === 401) {
         window.location.href = '/auth/login';
@@ -91,7 +110,7 @@ export default function DeviceAuthPage() {
               ←&nbsp;back
             </button>
             <span className="sep">/</span>
-            <span className="here">connect-agent</span>
+            <span className="here">{cliAuth ? 'authorize-cli' : 'connect-agent'}</span>
           </div>
         </div>
 
@@ -100,7 +119,7 @@ export default function DeviceAuthPage() {
             <div className="panel" style={{ width: 'min(560px, 100%)', marginTop: 48 }}>
               <div className="panel-head">
                 <div className="panel-title">
-                  <span className="ico">＋</span> CONNECT AGENT
+                  <span className="ico">＋</span> {cliAuth ? 'AUTHORIZE CLI' : 'CONNECT AGENT'}
                 </div>
               </div>
               <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -113,7 +132,19 @@ export default function DeviceAuthPage() {
                     lineHeight: 1.4,
                   }}
                 >
-                  {`┌──────────────────────────────────────────┐
+                  {cliAuth
+                    ? `┌──────────────────────────────────────────┐
+│  1. Run shellfleet login on your local      │
+│     machine. It displays a short code.       │
+│                                              │
+│  2. Enter that code below to authorize the   │
+│     trusted ShellFleet CLI.                  │
+│                                              │
+│  The CLI receives a short-lived session for  │
+│  the operator WebSocket only. It cannot be   │
+│  used as a browser or API session.           │
+└──────────────────────────────────────────┘`
+                    : `┌──────────────────────────────────────────┐
 │  1. Install the agent on the new host:   │
 │                                          │
 │  curl -fsSL https://shellfleet-repo.     │
@@ -141,7 +172,7 @@ export default function DeviceAuthPage() {
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div className="field">
-                    <label>pairing code</label>
+                    <label>{cliAuth ? 'authorization code' : 'pairing code'}</label>
                     <input
                       type="text"
                       required
@@ -171,7 +202,11 @@ export default function DeviceAuthPage() {
                       title={!canWrite ? 'viewer role: read-only' : undefined}
                       className="btn primary"
                     >
-                      {submitStatus === 'loading' ? '…' : '▶ approve & connect'}
+                      {submitStatus === 'loading'
+                        ? '…'
+                        : cliAuth
+                          ? '▶ authorize CLI'
+                          : '▶ approve & connect'}
                     </button>
                   </div>
                 </form>
